@@ -119,7 +119,8 @@ class FileConverterSmokeTests(unittest.TestCase):
     def test_all_video_modes(self):
         upload = self.upload("video", [(self.video_path.read_bytes(), "clip.mp4")])
         self.convert(upload, "compress", {"target_mb": 1})
-        self.convert(upload, "extract_frames")
+        self.convert(upload, "extract_frames", {"frame_mode": "second"})
+        self.convert(upload, "extract_frames", {"frame_mode": "all"})
         self.convert(upload, "extract_audio", {"bitrate": 64})
 
     def test_rejects_wrong_extension(self):

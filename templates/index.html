@@ -6,6 +6,13 @@
   <meta name="theme-color" content="#12343b">
   <title>File Converter</title>
   <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <script>
+    (() => {
+      const saved = localStorage.getItem("file-converter-theme");
+      const theme = saved || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.dataset.theme = theme;
+    })();
+  </script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
@@ -42,6 +49,16 @@
       <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/>
       <path d="M3.5 12h17M12 3c2.5 2.5 3.5 5.5 3.5 9s-1 6.5-3.5 9c-2.5-2.5-3.5-5.5-3.5-9S9.5 5.5 12 3Z" fill="none" stroke="currentColor" stroke-width="1.7"/>
     </symbol>
+    <symbol id="icon-sun" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/>
+      <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="icon-moon" viewBox="0 0 24 24">
+      <path d="M20.2 15.5A8.5 8.5 0 0 1 8.5 3.8 8.6 8.6 0 1 0 20.2 15.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-chevron" viewBox="0 0 24 24">
+      <path d="m7 9.5 5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
     <symbol id="icon-arrow" viewBox="0 0 24 24">
       <path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     </symbol>
@@ -60,10 +77,24 @@
         <span class="brand-mark"><span></span><span></span></span>
         <span>File Converter</span>
       </a>
-      <button class="language-button" id="languageButton" type="button" aria-label="Change language" title="Change language">
-        <svg><use href="#icon-globe"></use></svg>
-        <span id="languageCode">繁</span>
-      </button>
+      <div class="topbar-actions">
+        <button class="theme-button" id="themeButton" type="button" aria-label="切換深色模式" title="切換深色模式">
+          <svg class="theme-icon theme-icon-sun"><use href="#icon-sun"></use></svg>
+          <svg class="theme-icon theme-icon-moon"><use href="#icon-moon"></use></svg>
+        </button>
+        <div class="language-picker" id="languagePicker">
+          <button class="language-button" id="languageButton" type="button" aria-label="選擇語言" title="選擇語言" aria-haspopup="menu" aria-expanded="false">
+            <svg><use href="#icon-globe"></use></svg>
+            <span id="languageCode">繁</span>
+            <svg class="language-chevron"><use href="#icon-chevron"></use></svg>
+          </button>
+          <div class="language-menu hidden" id="languageMenu" role="menu">
+            <button type="button" data-locale="zh-Hant" role="menuitem"><span>繁體中文</span><span class="menu-check">✓</span></button>
+            <button type="button" data-locale="en" role="menuitem"><span>English</span><span class="menu-check">✓</span></button>
+            <button type="button" data-locale="ja" role="menuitem"><span>日本語</span><span class="menu-check">✓</span></button>
+          </div>
+        </div>
+      </div>
     </header>
 
     <aside class="sidebar" id="sidebar">

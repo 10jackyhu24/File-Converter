@@ -112,6 +112,11 @@ def _validate_options(category: str, mode: str, options: dict) -> dict:
         if bitrate == "lossless":
             return {"bitrate": bitrate}
         return {"bitrate": int(_number(bitrate, "音訊位元率", 16, 512))}
+    if category == "video" and mode == "extract_frames":
+        frame_mode = options.get("frame_mode", "second")
+        if frame_mode not in {"second", "all"}:
+            raise ConversionError("圖片提取頻率不正確。")
+        return {"frame_mode": frame_mode}
     if category == "audio" and mode == "volume":
         return {"db": _number(options.get("db"), "音量", -30, 30)}
     return {}
@@ -288,4 +293,4 @@ def too_large(_error):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     print(f"\nFile Converter 已啟動：http://127.0.0.1:{port}\n")
-    app.run(host="127.0.0.1", port=port, debug=False, threaded=True)
+    app.run(host="0.0.0.0", port=port, debug=False, threaded=True)

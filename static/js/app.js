@@ -3,6 +3,7 @@
 const translations = {
   "zh-Hant": {
     fileType: "檔案類型", image: "圖片", video: "影片", audio: "音檔", privacy: "檔案只會保留 24 小時",
+    selectLanguage: "選擇語言", themeToDark: "切換至深色模式", themeToLight: "切換至淺色模式",
     mode: "轉換模式", upload: "上傳", settings: "設定", download: "下載", back: "重新選擇",
     dropTitle: "拖曳檔案到這裡", or: "或", browse: "選擇檔案", selectedFiles: "已選檔案",
     addMore: "加入更多", next: "下一步", uploadedFiles: "已上傳的檔案", dragSort: "拖曳即可調整順序",
@@ -23,23 +24,25 @@ const translations = {
     title_audio_volume: "調整音量", title_pdf_merge: "連接 PDF", title_pdf_to_images: "PDF 轉圖片",
     desc_image_compress: "上傳圖片並設定需要的檔案大小。", desc_image_to_pdf: "依照排列順序，將多張圖片合成一份 PDF。",
     desc_image_noise: "用可調整的比例為圖片加入隨機顆粒。", desc_image_blur: "套用高斯模糊，像素越高效果越強。",
-    desc_video_compress: "在盡量保留畫質的前提下縮小影片檔案。", desc_video_extract_frames: "每秒提取一張高畫質 JPG 圖片並打包下載。",
+    desc_video_compress: "在盡量保留畫質的前提下縮小影片檔案。", desc_video_extract_frames: "將影片畫面提取為高畫質 JPG 圖片並打包下載。",
     desc_video_extract_audio: "將影片中的聲音輸出成 MP3 或無損 FLAC。", desc_audio_volume: "以 dB 為單位增加或降低音檔音量。",
     desc_pdf_merge: "拖曳調整檔案順序，再合併成單一 PDF。", desc_pdf_to_images: "將 PDF 每一頁轉為高解析 PNG 圖片。",
     oh_target: "選擇壓縮後的檔案大小", oh_noise: "選擇雜訊強度", oh_blur: "選擇模糊程度", oh_audio: "選擇輸出音質",
-    oh_volume: "設定音量變化", oh_order: "確認檔案順序", oh_ready: "確認轉換設定",
+    oh_volume: "設定音量變化", oh_order: "確認檔案順序", oh_ready: "確認轉換設定", oh_frames: "選擇圖片提取頻率",
     preset_discord: "20 MB (Discord)", customSize: "自訂大小", custom: "自訂", weak: "弱", medium: "中", strong: "強",
     ratio5: "比例 5%", ratio10: "比例 10%", ratio20: "比例 20%", pixels2: "2 像素", pixels10: "10 像素", pixels30: "30 像素",
     low: "低", high: "高", lossless: "無損", kbps64: "64 kbps", kbps128: "128 kbps", kbps256: "256 kbps", losslessFlac: "FLAC 原始品質",
     volumeChange: "增加或降低", positiveHint: "正數增加、負數降低，範圍 -30～30 dB",
     single_to_pdf: "合併成一份 PDF", single_to_pdf_desc: "將依照上方檔案順序建立 PDF，每張圖片一頁。",
     single_frames: "每秒提取一張圖片", single_frames_desc: "圖片將以 JPG 格式存入 ZIP 壓縮檔。",
+    frameSecond: "每秒一張", frameSecondDetail: "適合快速預覽，輸出數量較少", frameEvery: "每一幀", frameEveryDetail: "保留影片的所有畫面，可能產生大量檔案",
     single_merge: "依目前順序連接", single_merge_desc: "第一個檔案會出現在合併結果的最前面。",
     single_pdf_images: "將每一頁轉為 PNG", single_pdf_images_desc: "輸出為 144 DPI 圖片並集中打包成 ZIP。",
     customValue: "自訂數值", filesUnit: "個檔案"
   },
   en: {
     fileType: "FILE TYPE", image: "Images", video: "Videos", audio: "Audio", privacy: "Files are retained for 24 hours only",
+    selectLanguage: "Select language", themeToDark: "Switch to dark mode", themeToLight: "Switch to light mode",
     mode: "CONVERSION MODE", upload: "Upload", settings: "Settings", download: "Download", back: "Choose again",
     dropTitle: "Drop files here", or: "or", browse: "Browse files", selectedFiles: "Selected files",
     addMore: "Add more", next: "Next", uploadedFiles: "UPLOADED FILES", dragSort: "Drag to reorder files",
@@ -60,23 +63,25 @@ const translations = {
     title_audio_volume: "Adjust audio volume", title_pdf_merge: "Merge PDFs", title_pdf_to_images: "PDF to images",
     desc_image_compress: "Upload images and choose a target file size.", desc_image_to_pdf: "Combine images into one PDF in the displayed order.",
     desc_image_noise: "Add adjustable random grain to your images.", desc_image_blur: "Apply Gaussian blur; a higher pixel value creates a stronger effect.",
-    desc_video_compress: "Reduce video size while preserving as much quality as possible.", desc_video_extract_frames: "Extract one high-quality JPG per second into a ZIP file.",
+    desc_video_compress: "Reduce video size while preserving as much quality as possible.", desc_video_extract_frames: "Extract video frames as high-quality JPG images in a ZIP file.",
     desc_video_extract_audio: "Export the video's sound as MP3 or lossless FLAC.", desc_audio_volume: "Increase or reduce audio volume in decibels.",
     desc_pdf_merge: "Drag files into the right order, then merge them into one PDF.", desc_pdf_to_images: "Turn every PDF page into a high-resolution PNG image.",
     oh_target: "Choose the target file size", oh_noise: "Choose noise strength", oh_blur: "Choose blur strength", oh_audio: "Choose output quality",
-    oh_volume: "Set the volume change", oh_order: "Confirm file order", oh_ready: "Confirm conversion settings",
+    oh_volume: "Set the volume change", oh_order: "Confirm file order", oh_ready: "Confirm conversion settings", oh_frames: "Choose the frame extraction rate",
     preset_discord: "20 MB (Discord)", customSize: "Custom size", custom: "Custom", weak: "Low", medium: "Medium", strong: "High",
     ratio5: "5% ratio", ratio10: "10% ratio", ratio20: "20% ratio", pixels2: "2 pixels", pixels10: "10 pixels", pixels30: "30 pixels",
     low: "Low", high: "High", lossless: "Lossless", kbps64: "64 kbps", kbps128: "128 kbps", kbps256: "256 kbps", losslessFlac: "Original-quality FLAC",
     volumeChange: "Increase or reduce", positiveHint: "Positive increases, negative reduces; -30 to 30 dB",
     single_to_pdf: "Combine into one PDF", single_to_pdf_desc: "A PDF will be created in the order above, one image per page.",
     single_frames: "Extract one image per second", single_frames_desc: "JPG images will be placed in a ZIP archive.",
+    frameSecond: "One per second", frameSecondDetail: "Best for quick previews with fewer output files", frameEvery: "Every frame", frameEveryDetail: "Keeps every video frame and may create many files",
     single_merge: "Merge in the current order", single_merge_desc: "The first file above will appear first in the merged result.",
     single_pdf_images: "Convert every page to PNG", single_pdf_images_desc: "144-DPI images will be bundled in a ZIP archive.",
     customValue: "Custom value", filesUnit: "files"
   },
   ja: {
     fileType: "ファイル種類", image: "画像", video: "動画", audio: "音声", privacy: "ファイルは24時間後に削除されます",
+    selectLanguage: "言語を選択", themeToDark: "ダークモードに切り替え", themeToLight: "ライトモードに切り替え",
     mode: "変換モード", upload: "アップロード", settings: "設定", download: "ダウンロード", back: "選び直す",
     dropTitle: "ファイルをここにドロップ", or: "または", browse: "ファイルを選択", selectedFiles: "選択したファイル",
     addMore: "追加", next: "次へ", uploadedFiles: "アップロード済み", dragSort: "ドラッグして順番を変更",
@@ -97,17 +102,18 @@ const translations = {
     title_audio_volume: "音量を調整", title_pdf_merge: "PDFを結合", title_pdf_to_images: "PDFを画像に変換",
     desc_image_compress: "画像をアップロードして目標サイズを設定します。", desc_image_to_pdf: "表示順に複数の画像を1つのPDFにまとめます。",
     desc_image_noise: "調整可能なランダムノイズを画像に追加します。", desc_image_blur: "ガウスぼかしを適用します。ピクセル値が高いほど強くなります。",
-    desc_video_compress: "画質をできるだけ保ちながら動画サイズを縮小します。", desc_video_extract_frames: "1秒ごとに高画質JPGを抽出しZIPにまとめます。",
+    desc_video_compress: "画質をできるだけ保ちながら動画サイズを縮小します。", desc_video_extract_frames: "動画のフレームを高画質JPGとして抽出しZIPにまとめます。",
     desc_video_extract_audio: "動画の音声をMP3またはFLACで書き出します。", desc_audio_volume: "dB単位で音量を上げ下げします。",
     desc_pdf_merge: "ドラッグで順番を整え、1つのPDFに結合します。", desc_pdf_to_images: "PDFの各ページを高解像度PNGに変換します。",
     oh_target: "変換後のファイルサイズ", oh_noise: "ノイズ強度", oh_blur: "ぼかし強度", oh_audio: "出力音質",
-    oh_volume: "音量の変化", oh_order: "ファイル順を確認", oh_ready: "変換設定を確認",
+    oh_volume: "音量の変化", oh_order: "ファイル順を確認", oh_ready: "変換設定を確認", oh_frames: "画像の抽出頻度を選択",
     preset_discord: "20 MB (Discord)", customSize: "カスタムサイズ", custom: "カスタム", weak: "弱", medium: "中", strong: "強",
     ratio5: "比率 5%", ratio10: "比率 10%", ratio20: "比率 20%", pixels2: "2 ピクセル", pixels10: "10 ピクセル", pixels30: "30 ピクセル",
     low: "低", high: "高", lossless: "ロスレス", kbps64: "64 kbps", kbps128: "128 kbps", kbps256: "256 kbps", losslessFlac: "FLAC オリジナル品質",
     volumeChange: "上げる・下げる", positiveHint: "正数で上げ、負数で下げます（-30～30 dB）",
     single_to_pdf: "1つのPDFに結合", single_to_pdf_desc: "上の順番で、画像1枚につき1ページのPDFを作成します。",
     single_frames: "1秒ごとに画像を抽出", single_frames_desc: "JPG画像をZIPファイルにまとめます。",
+    frameSecond: "1秒ごとに1枚", frameSecondDetail: "プレビュー向けで、出力ファイル数を抑えます", frameEvery: "すべてのフレーム", frameEveryDetail: "全画面を保持するため、大量のファイルになる場合があります",
     single_merge: "現在の順番で結合", single_merge_desc: "上の最初のファイルが結合結果の先頭になります。",
     single_pdf_images: "すべてのページをPNGに変換", single_pdf_images_desc: "144 DPI画像をZIPファイルにまとめます。",
     customValue: "カスタム値", filesUnit: "ファイル"
@@ -134,7 +140,8 @@ const categoryConfig = {
     modes: [
       { id: "compress", label: "m_video_compress", title: "title_video_compress", desc: "desc_video_compress", heading: "oh_target", field: "target_mb", defaultValue: 20,
         options: [{ value: 20, label: "preset_discord", detail: "20 MB" }, { value: "custom", label: "customSize", detail: "customValue", input: { unit: "MB", min: .1, max: 2048, step: .1, initial: 100 } }] },
-      { id: "extract_frames", label: "m_video_extract_frames", title: "title_video_extract_frames", desc: "desc_video_extract_frames", heading: "oh_ready", single: ["single_frames", "single_frames_desc"] },
+      { id: "extract_frames", label: "m_video_extract_frames", title: "title_video_extract_frames", desc: "desc_video_extract_frames", heading: "oh_frames", field: "frame_mode", defaultValue: "second",
+        options: [{ value: "second", label: "frameSecond", detail: "frameSecondDetail" }, { value: "all", label: "frameEvery", detail: "frameEveryDetail" }] },
       { id: "extract_audio", label: "m_video_extract_audio", title: "title_video_extract_audio", desc: "desc_video_extract_audio", heading: "oh_audio", field: "bitrate", defaultValue: 128,
         options: [{ value: 64, label: "low", detail: "kbps64" }, { value: 128, label: "medium", detail: "kbps128" }, { value: 256, label: "high", detail: "kbps256" }, { value: "lossless", label: "lossless", detail: "losslessFlac" }, { value: "custom", label: "custom", detail: "customValue", input: { unit: "kbps", min: 16, max: 512, step: 1, initial: 192 } }] }
     ]
@@ -165,6 +172,7 @@ const elements = {
   pageTitle: $("#pageTitle"), pageDescription: $("#pageDescription"), eyebrow: $("#eyebrow"), fileHint: $("#fileHint"),
   fileCards: $("#fileCards"), fileCount: $("#fileCount"), optionsHeading: $("#optionsHeading"), optionList: $("#optionList"),
   selectionSummary: $("#selectionSummary"), convertButton: $("#convertButton"), languageButton: $("#languageButton"), languageCode: $("#languageCode"),
+  languagePicker: $("#languagePicker"), languageMenu: $("#languageMenu"), themeButton: $("#themeButton"),
   progressModal: $("#progressModal"), resultModal: $("#resultModal"), resultFile: $("#resultFile"), downloadButton: $("#downloadButton"),
   startOverButton: $("#startOverButton"), toastRegion: $("#toastRegion"), sidebar: $("#sidebar"), mobileMenu: $("#mobileMenu")
 };
@@ -172,6 +180,7 @@ const elements = {
 const savedLocale = localStorage.getItem("file-converter-locale");
 const state = {
   locale: translations[savedLocale] ? savedLocale : "zh-Hant",
+  theme: document.documentElement.dataset.theme === "dark" ? "dark" : "light",
   category: "image",
   mode: "compress",
   view: "upload",
@@ -195,6 +204,12 @@ function applyTranslations() {
   document.documentElement.lang = state.locale === "zh-Hant" ? "zh-Hant" : state.locale;
   $$('[data-i18n]').forEach((element) => { element.textContent = t(element.dataset.i18n); });
   elements.languageCode.textContent = state.locale === "zh-Hant" ? "繁" : state.locale === "en" ? "EN" : "日";
+  elements.languageButton.setAttribute("aria-label", t("selectLanguage"));
+  elements.languageButton.title = t("selectLanguage");
+  elements.languageMenu.querySelectorAll("[data-locale]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.locale === state.locale);
+  });
+  updateThemeButton();
   renderModeTabs();
   updateHeadings();
   if (state.view === "convert") {
@@ -203,6 +218,25 @@ function applyTranslations() {
   } else {
     renderPendingFiles();
   }
+}
+
+function updateThemeButton() {
+  const label = state.theme === "dark" ? t("themeToLight") : t("themeToDark");
+  elements.themeButton.setAttribute("aria-label", label);
+  elements.themeButton.title = label;
+}
+
+function setTheme(theme) {
+  state.theme = theme === "dark" ? "dark" : "light";
+  document.documentElement.dataset.theme = state.theme;
+  document.querySelector('meta[name="theme-color"]').content = state.theme === "dark" ? "#0d171a" : "#12343b";
+  localStorage.setItem("file-converter-theme", state.theme);
+  updateThemeButton();
+}
+
+function closeLanguageMenu() {
+  elements.languageMenu.classList.add("hidden");
+  elements.languageButton.setAttribute("aria-expanded", "false");
 }
 
 function updateHeadings() {
@@ -541,19 +575,35 @@ elements.nextButton.addEventListener("click", uploadFiles);
 elements.convertButton.addEventListener("click", convertFiles);
 elements.backButton.addEventListener("click", startOver);
 elements.startOverButton.addEventListener("click", startOver);
+elements.themeButton.addEventListener("click", () => setTheme(state.theme === "dark" ? "light" : "dark"));
 elements.languageButton.addEventListener("click", () => {
-  const locales = ["zh-Hant", "en", "ja"];
-  state.locale = locales[(locales.indexOf(state.locale) + 1) % locales.length];
+  const opening = elements.languageMenu.classList.contains("hidden");
+  elements.languageMenu.classList.toggle("hidden", !opening);
+  elements.languageButton.setAttribute("aria-expanded", opening ? "true" : "false");
+});
+elements.languageMenu.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-locale]");
+  if (!button) return;
+  state.locale = button.dataset.locale;
   localStorage.setItem("file-converter-locale", state.locale);
+  closeLanguageMenu();
   applyTranslations();
 });
 elements.mobileMenu.addEventListener("click", () => elements.sidebar.classList.toggle("open"));
 document.addEventListener("click", (event) => {
   if (!event.target.closest(".file-card")) $$(".file-menu").forEach((menu) => menu.classList.add("hidden"));
+  if (!event.target.closest(".language-picker")) closeLanguageMenu();
   if (window.innerWidth <= 700 && !event.target.closest(".sidebar") && !event.target.closest(".mobile-menu")) elements.sidebar.classList.remove("open");
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !elements.languageMenu.classList.contains("hidden")) {
+    closeLanguageMenu();
+    elements.languageButton.focus();
+  }
 });
 window.addEventListener("beforeunload", revokePreviews);
 
 resetModeSelection();
+setTheme(state.theme);
 applyTranslations();
 renderPendingFiles();

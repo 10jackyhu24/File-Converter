@@ -235,7 +235,9 @@ def video_compress(files: list[tuple[Path, str]], output_dir: Path, target_mb: f
     return _zip_paths(output_dir / "compressed_videos.zip", generated)
 
 
-def video_frames(files: list[tuple[Path, str]], output_dir: Path) -> Path:
+def video_frames(
+    files: list[tuple[Path, str]], output_dir: Path, frame_mode: str = "second"
+) -> Path:
     generated: list[tuple[Path, str]] = []
     frames_root = output_dir / "frames"
     frames_root.mkdir(exist_ok=True)
@@ -247,10 +249,13 @@ def video_frames(files: list[tuple[Path, str]], output_dir: Path) -> Path:
             destination_dir = frames_root / f"{stem}_{suffix}"
             suffix += 1
         destination_dir.mkdir()
-        _run([
-            "ffmpeg", "-y", "-i", str(source), "-vf", "fps=1", "-q:v", "2",
-            str(destination_dir / "frame_%05d.jpg"),
-        ])
+        command = ["ffmpeg", "-y", "-i", str(source), "-map", "0:v:0"]
+        if frame_mode == "all":
+            command += ["-fps_mode", "passthrough"]
+        else:
+            command += ["-vf", "fps=1"]
+        command += ["-q:v", "2", str(destination_dir / "frame_%05d.jpg")]
+        _run(command)
         for frame in sorted(destination_dir.glob("*.jpg")):
             generated.append((frame, f"{destination_dir.name}/{frame.name}"))
     if not generated:
@@ -374,7 +379,7 @@ def convert(
         if category == "video" and mode == "compress":
             return video_compress(files, output_dir, float(options["target_mb"]))
         if category == "video" and mode == "extract_frames":
-            return video_frames(files, output_dir)
+            return video_frames(files, output_dir, options.get("frame_mode", "second"))
         if category == "video" and mode == "extract_audio":
             bitrate = options.get("bitrate", 128)
             return video_audio(files, output_dir, bitrate if bitrate == "lossless" else int(bitrate))
