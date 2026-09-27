@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#12343b">
+  <title>File Converter</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <svg class="svg-sprite" aria-hidden="true">
+    <symbol id="icon-image" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="18" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/>
+      <circle cx="8.2" cy="9" r="1.6" fill="currentColor"/>
+      <path d="m5.5 17 4.2-4.2 2.8 2.7 2.2-2.1 3.8 3.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-video" viewBox="0 0 24 24">
+      <rect x="3" y="5" width="14" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/>
+      <path d="m17 10 4-2v8l-4-2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-audio" viewBox="0 0 24 24">
+      <path d="M9 18V6l10-2v12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="6.5" cy="18" rx="2.5" ry="2" fill="none" stroke="currentColor" stroke-width="1.8"/>
+      <ellipse cx="16.5" cy="16" rx="2.5" ry="2" fill="none" stroke="currentColor" stroke-width="1.8"/>
+    </symbol>
+    <symbol id="icon-pdf" viewBox="0 0 24 24">
+      <path d="M6 2.8h8l4 4V21H6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+      <path d="M14 3v4h4M8.2 16.5v-5h1.5a1.6 1.6 0 0 1 0 3.2H8.2m5.1 1.8v-5h1a2.1 2.1 0 0 1 0 4.2h-1m4.4.8v-5h2.8" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-upload" viewBox="0 0 24 24">
+      <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-file" viewBox="0 0 24 24">
+      <path d="M6 2.8h8l4 4V21H6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+      <path d="M14 3v4h4" fill="none" stroke="currentColor" stroke-width="1.8"/>
+    </symbol>
+    <symbol id="icon-more" viewBox="0 0 24 24">
+      <circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/>
+    </symbol>
+    <symbol id="icon-globe" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/>
+      <path d="M3.5 12h17M12 3c2.5 2.5 3.5 5.5 3.5 9s-1 6.5-3.5 9c-2.5-2.5-3.5-5.5-3.5-9S9.5 5.5 12 3Z" fill="none" stroke="currentColor" stroke-width="1.7"/>
+    </symbol>
+    <symbol id="icon-arrow" viewBox="0 0 24 24">
+      <path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24">
+      <path d="m5 12.5 4.2 4.2L19.5 6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-download" viewBox="0 0 24 24">
+      <path d="M12 4v11m0 0 4-4m-4 4-4-4M5 19h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+  </svg>
+
+  <div class="app-shell">
+    <header class="topbar">
+      <button class="mobile-menu" id="mobileMenu" type="button" aria-label="Menu"><span></span><span></span><span></span></button>
+      <a class="brand" href="/" aria-label="File Converter home">
+        <span class="brand-mark"><span></span><span></span></span>
+        <span>File Converter</span>
+      </a>
+      <button class="language-button" id="languageButton" type="button" aria-label="Change language" title="Change language">
+        <svg><use href="#icon-globe"></use></svg>
+        <span id="languageCode">繁</span>
+      </button>
+    </header>
+
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-heading" data-i18n="fileType">檔案類型</div>
+      <nav class="category-nav" id="categoryNav" aria-label="File categories">
+        <button class="category-button active" type="button" data-category="image">
+          <svg><use href="#icon-image"></use></svg><span data-i18n="image">圖片</span>
+        </button>
+        <button class="category-button" type="button" data-category="video">
+          <svg><use href="#icon-video"></use></svg><span data-i18n="video">影片</span>
+        </button>
+        <button class="category-button" type="button" data-category="audio">
+          <svg><use href="#icon-audio"></use></svg><span data-i18n="audio">音檔</span>
+        </button>
+        <button class="category-button" type="button" data-category="pdf">
+          <svg><use href="#icon-pdf"></use></svg><span>PDF</span>
+        </button>
+      </nav>
+      <div class="sidebar-note">
+        <span class="privacy-dot"></span>
+        <span data-i18n="privacy">檔案只會保留 24 小時</span>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <section class="mode-bar" aria-label="Conversion modes">
+        <div class="mode-label" data-i18n="mode">轉換模式</div>
+        <div class="mode-tabs" id="modeTabs"></div>
+      </section>
+
+      <section class="workspace">
+        <div class="workspace-heading">
+          <div>
+            <button type="button" class="back-button hidden" id="backButton"><span>←</span> <span data-i18n="back">重新選擇</span></button>
+            <p class="eyebrow" id="eyebrow">IMAGE CONVERTER</p>
+            <h1 id="pageTitle">壓縮圖片</h1>
+            <p class="page-description" id="pageDescription">上傳圖片並設定需要的檔案大小。</p>
+          </div>
+          <div class="step-indicator" aria-label="Steps">
+            <div class="step active" data-step="1"><span>1</span><em data-i18n="upload">上傳</em></div>
+            <i></i>
+            <div class="step" data-step="2"><span>2</span><em data-i18n="settings">設定</em></div>
+            <i></i>
+            <div class="step" data-step="3"><span>3</span><em data-i18n="download">下載</em></div>
+          </div>
+        </div>
+
+        <div id="uploadView" class="view upload-view">
+          <input type="file" id="fileInput" multiple hidden>
+          <button type="button" class="dropzone" id="dropzone">
+            <span class="drop-illustration">
+              <span class="file-sheet sheet-back"></span>
+              <span class="file-sheet sheet-front"><svg><use href="#icon-upload"></use></svg></span>
+            </span>
+            <strong data-i18n="dropTitle">拖曳檔案到這裡</strong>
+            <span class="drop-or" data-i18n="or">或</span>
+            <span class="browse-pill" data-i18n="browse">選擇檔案</span>
+            <small id="fileHint">支援 JPG、PNG、WEBP、BMP、TIFF、GIF</small>
+          </button>
+
+          <div class="pending-files hidden" id="pendingFiles">
+            <div class="pending-header">
+              <strong><span data-i18n="selectedFiles">已選檔案</span> <span id="pendingCount"></span></strong>
+              <button type="button" id="addMoreButton">＋ <span data-i18n="addMore">加入更多</span></button>
+            </div>
+            <div id="pendingList" class="pending-list"></div>
+          </div>
+
+          <div class="primary-action-row">
+            <button type="button" class="primary-button" id="nextButton" disabled>
+              <span data-i18n="next">下一步</span><svg><use href="#icon-arrow"></use></svg>
+            </button>
+          </div>
+        </div>
+
+        <div id="convertView" class="view convert-view hidden">
+          <section class="files-section">
+            <div class="section-title-row">
+              <div>
+                <span class="section-kicker" data-i18n="uploadedFiles">已上傳的檔案</span>
+                <h2 data-i18n="dragSort">拖曳即可調整順序</h2>
+              </div>
+              <span class="file-count" id="fileCount">0</span>
+            </div>
+            <div class="file-cards" id="fileCards"></div>
+          </section>
+
+          <section class="options-section">
+            <div class="section-title-row">
+              <div>
+                <span class="section-kicker" data-i18n="conversionOptions">轉換選項</span>
+                <h2 id="optionsHeading">選擇壓縮後的檔案大小</h2>
+              </div>
+            </div>
+            <div class="option-list" id="optionList"></div>
+          </section>
+
+          <div class="convert-action-row">
+            <div class="selection-summary">
+              <span data-i18n="currentSetting">目前設定</span>
+              <strong id="selectionSummary">20 MB (Discord)</strong>
+            </div>
+            <button type="button" class="primary-button convert-button" id="convertButton">
+              <span data-i18n="convertNow">開始轉換</span><svg><use href="#icon-arrow"></use></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast-region" id="toastRegion" aria-live="polite"></div>
+
+  <div class="modal-backdrop hidden" id="progressModal" role="dialog" aria-modal="true" aria-labelledby="progressTitle">
+    <div class="modal-card progress-card">
+      <div class="spinner"><span></span></div>
+      <h2 id="progressTitle" data-i18n="processing">正在處理檔案</h2>
+      <p id="progressMessage" data-i18n="processingHint">所需時間取決於檔案大小，請不要關閉頁面。</p>
+      <div class="progress-track"><span></span></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop hidden" id="resultModal" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+    <div class="modal-card result-card">
+      <div class="success-icon"><svg><use href="#icon-check"></use></svg></div>
+      <span class="result-kicker" data-i18n="allDone">ALL DONE</span>
+      <h2 id="resultTitle" data-i18n="conversionComplete">轉換完成！</h2>
+      <p id="resultFile"></p>
+      <a class="primary-button download-button" id="downloadButton" href="#">
+        <svg><use href="#icon-download"></use></svg><span data-i18n="downloadFile">下載檔案</span>
+      </a>
+      <button type="button" class="text-button" id="startOverButton" data-i18n="convertMore">轉換其他檔案</button>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
