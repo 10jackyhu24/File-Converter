@@ -9,6 +9,7 @@ const translations = {
     addMore: "加入更多", next: "下一步", uploadedFiles: "已上傳的檔案", dragSort: "拖曳即可調整順序",
     conversionOptions: "轉換選項", currentSetting: "目前設定", convertNow: "開始轉換", delete: "刪除",
     processing: "正在處理檔案", processingHint: "所需時間取決於檔案大小，請不要關閉頁面。",
+    uploading: "正在上傳檔案…", preparing: "準備轉換…", processingFile: "正在處理", finalizing: "正在整理輸出檔案…",
     allDone: "全部完成", conversionComplete: "轉換完成！", downloadFile: "下載檔案", convertMore: "轉換其他檔案",
     uploadFailed: "上傳失敗，請再試一次。", convertFailed: "轉換失敗，請再試一次。", invalidType: "請選擇符合目前分類的檔案。",
     noFiles: "請先選擇檔案。", minTwoPdf: "連接 PDF 至少需要兩個檔案。", confirmDeleteLast: "已刪除最後一個檔案，請重新上傳。",
@@ -48,6 +49,7 @@ const translations = {
     addMore: "Add more", next: "Next", uploadedFiles: "UPLOADED FILES", dragSort: "Drag to reorder files",
     conversionOptions: "CONVERSION OPTIONS", currentSetting: "CURRENT SETTING", convertNow: "Convert now", delete: "Delete",
     processing: "Processing your files", processingHint: "This may take a while depending on file size. Please keep this page open.",
+    uploading: "Uploading files…", preparing: "Preparing conversion…", processingFile: "Processing", finalizing: "Finalizing output…",
     allDone: "ALL DONE", conversionComplete: "Conversion complete!", downloadFile: "Download file", convertMore: "Convert more files",
     uploadFailed: "Upload failed. Please try again.", convertFailed: "Conversion failed. Please try again.", invalidType: "Choose files matching the current category.",
     noFiles: "Choose at least one file first.", minTwoPdf: "Merging PDFs requires at least two files.", confirmDeleteLast: "The last file was removed. Please upload again.",
@@ -87,6 +89,7 @@ const translations = {
     addMore: "追加", next: "次へ", uploadedFiles: "アップロード済み", dragSort: "ドラッグして順番を変更",
     conversionOptions: "変換オプション", currentSetting: "現在の設定", convertNow: "変換を開始", delete: "削除",
     processing: "ファイルを処理しています", processingHint: "ファイルサイズにより時間がかかります。このページを閉じないでください。",
+    uploading: "ファイルをアップロード中…", preparing: "変換を準備中…", processingFile: "処理中", finalizing: "出力ファイルを作成中…",
     allDone: "完了", conversionComplete: "変換が完了しました！", downloadFile: "ダウンロード", convertMore: "別のファイルを変換",
     uploadFailed: "アップロードに失敗しました。", convertFailed: "変換に失敗しました。", invalidType: "現在のカテゴリに合うファイルを選択してください。",
     noFiles: "先にファイルを選択してください。", minTwoPdf: "PDFの結合には2つ以上のファイルが必要です。", confirmDeleteLast: "最後のファイルを削除しました。再度アップロードしてください。",
@@ -174,6 +177,7 @@ const elements = {
   selectionSummary: $("#selectionSummary"), convertButton: $("#convertButton"), languageButton: $("#languageButton"), languageCode: $("#languageCode"),
   languagePicker: $("#languagePicker"), languageMenu: $("#languageMenu"), themeButton: $("#themeButton"),
   progressModal: $("#progressModal"), resultModal: $("#resultModal"), resultFile: $("#resultFile"), downloadButton: $("#downloadButton"),
+  progressBar: $("#progressBar"), progressPercent: $("#progressPercent"), progressStatus: $("#progressStatus"),
   startOverButton: $("#startOverButton"), toastRegion: $("#toastRegion"), sidebar: $("#sidebar"), mobileMenu: $("#mobileMenu")
 };
 
@@ -340,16 +344,37 @@ function formatBytes(bytes) {
   return `${number.toFixed(index === 0 || number >= 10 ? 0 : 1)} ${units[index]}`;
 }
 
+function uploadRequest(form) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/upload");
+    xhr.responseType = "json";
+    xhr.upload.addEventListener("progress", (event) => {
+      if (event.lengthComputable) setProgress(event.loaded / event.total * 100, t("uploading"));
+    });
+    xhr.addEventListener("load", () => {
+      const result = xhr.response || {};
+      if (xhr.status < 200 || xhr.status >= 300 || !result.ok) {
+        reject(new Error(result.error || t("uploadFailed")));
+        return;
+      }
+      resolve(result);
+    });
+    xhr.addEventListener("error", () => reject(new Error(t("uploadFailed"))));
+    xhr.addEventListener("abort", () => reject(new Error(t("uploadFailed"))));
+    xhr.send(form);
+  });
+}
+
 async function uploadFiles() {
   if (!state.pendingFiles.length) return showToast(t("noFiles"));
   const form = new FormData();
   form.append("category", state.category);
   state.pendingFiles.forEach((file) => form.append("files", file, file.name));
-  showProgress();
+  showProgress(0, t("uploading"));
   try {
-    const response = await fetch("/api/upload", { method: "POST", body: form });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok || !result.ok) throw new Error(result.error || t("uploadFailed"));
+    const result = await uploadRequest(form);
+    setProgress(100, t("uploading"));
     state.jobId = result.job_id;
     state.uploadedFiles = result.files.map((file, index) => ({
       ...file,
@@ -510,15 +535,17 @@ async function convertFiles() {
   if (state.category === "pdf" && state.mode === "merge" && state.uploadedFiles.length < 2) return showToast(t("minTwoPdf"));
   let options;
   try { options = conversionOptions(); } catch (error) { return showToast(error.message); }
-  showProgress();
+  showProgress(0, t("preparing"));
   try {
     const response = await fetch("/api/convert", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ job_id: state.jobId, mode: state.mode, file_ids: state.uploadedFiles.map((file) => file.id), options })
     });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok || !result.ok) throw new Error(result.error || t("convertFailed"));
+    const queued = await response.json().catch(() => ({}));
+    if (!response.ok || !queued.ok) throw new Error(queued.error || t("convertFailed"));
+    const result = await waitForConversion(queued.status_url);
+    setProgress(100, t("finalizing"));
     elements.progressModal.classList.add("hidden");
     elements.resultFile.textContent = `${result.filename} · ${formatBytes(result.size)}`;
     elements.downloadButton.href = result.download_url;
@@ -530,7 +557,37 @@ async function convertFiles() {
   }
 }
 
-function showProgress() { elements.progressModal.classList.remove("hidden"); }
+async function waitForConversion(statusUrl) {
+  while (true) {
+    const response = await fetch(statusUrl, { cache: "no-store" });
+    const status = await response.json().catch(() => ({}));
+    if (!response.ok || !status.ok) throw new Error(status.error || t("convertFailed"));
+    if (status.status === "failed") throw new Error(status.error || t("convertFailed"));
+    if (status.status === "completed") return status;
+
+    let label = t("preparing");
+    if (status.status === "processing") {
+      label = status.filename ? `${t("processingFile")}：${status.filename}` : t("processing");
+    } else if (status.status === "finalizing") {
+      label = t("finalizing");
+    }
+    setProgress(status.progress || 0, label);
+    await new Promise((resolve) => window.setTimeout(resolve, 350));
+  }
+}
+
+function setProgress(percent, statusText) {
+  const value = Math.max(0, Math.min(100, Number(percent) || 0));
+  elements.progressBar.style.width = `${value}%`;
+  elements.progressPercent.textContent = `${Math.round(value)}%`;
+  elements.progressStatus.textContent = statusText || t("preparing");
+  elements.progressBar.parentElement.setAttribute("aria-valuenow", String(Math.round(value)));
+}
+
+function showProgress(percent = 0, statusText = t("preparing")) {
+  setProgress(percent, statusText);
+  elements.progressModal.classList.remove("hidden");
+}
 
 function showToast(message) {
   const toast = document.createElement("div");

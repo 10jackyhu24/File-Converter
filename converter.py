@@ -7,7 +7,7 @@ import subprocess
 import zipfile
 from io import BytesIO
 from pathlib import Path
-from typing import Iterable
+from typing import Callable, Iterable
 
 from PIL import Image, ImageFilter, ImageOps
 from pypdf import PdfReader, PdfWriter
@@ -15,6 +15,25 @@ from pypdf import PdfReader, PdfWriter
 
 class ConversionError(RuntimeError):
     """A conversion error that is safe to show in the UI."""
+
+
+ProgressCallback = Callable[[float, str | None], None]
+
+
+def _report(progress: ProgressCallback | None, percent: float, filename: str | None = None) -> None:
+    if progress:
+        progress(max(0.0, min(99.0, percent)), filename)
+
+
+def _file_progress(
+    progress: ProgressCallback | None,
+    file_index: int,
+    file_count: int,
+    filename: str,
+    local_percent: float,
+) -> None:
+    overall = ((file_index + local_percent / 100.0) / max(file_count, 1)) * 94.0
+    _report(progress, overall, filename)
 
 
 def _safe_stem(name: str) -> str:
@@ -31,7 +50,63 @@ def _unique_path(folder: Path, name: str) -> Path:
     return target
 
 
-def _run(command: list[str], timeout: int = 3600) -> None:
+def _run(
+    command: list[str],
+    timeout: int = 3600,
+    progress_callback: Callable[[float], None] | None = None,
+    duration: float | None = None,
+) -> None:
+    if progress_callback and duration and command and command[0].lower().startswith("ffmpeg"):
+        progress_command = [
+            command[0], "-v", "error", *command[1:-1],
+            "-progress", "pipe:1", "-nostats", command[-1],
+        ]
+        try:
+            process = subprocess.Popen(
+                progress_command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                bufsize=1,
+                creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
+            )
+            assert process.stdout is not None
+            for line in process.stdout:
+                key, separator, value = line.strip().partition("=")
+                if not separator:
+                    continue
+                if key in {"out_time_ms", "out_time_us"}:
+                    try:
+                        seconds = int(value) / 1_000_000
+                        progress_callback(min(99.0, seconds / duration * 100))
+                    except ValueError:
+                        pass
+                elif key == "progress" and value == "end":
+                    progress_callback(100.0)
+            process.wait(timeout=timeout)
+            stderr = process.stderr.read() if process.stderr else ""
+            process.stdout.close()
+            if process.stderr:
+                process.stderr.close()
+        except FileNotFoundError as exc:
+            raise ConversionError("找不到 FFmpeg。請先安裝 FFmpeg 並加入 PATH。") from exc
+        except subprocess.TimeoutExpired as exc:
+            process.kill()
+            process.wait()
+            if process.stdout:
+                process.stdout.close()
+            if process.stderr:
+                process.stderr.close()
+            raise ConversionError("轉換時間過長，已停止處理。") from exc
+
+        if process.returncode != 0:
+            details = stderr.strip().splitlines()
+            message = details[-1] if details else "未知的 FFmpeg 錯誤"
+            raise ConversionError(f"媒體轉換失敗：{message}")
+        return
+
     try:
         completed = subprocess.run(
             command,
@@ -142,41 +217,59 @@ def _compress_image(source: Path, destination: Path, target_bytes: int) -> None:
     destination.write_bytes(best)
 
 
-def image_compress(files: list[tuple[Path, str]], output_dir: Path, target_mb: float) -> Path:
+def image_compress(
+    files: list[tuple[Path, str]],
+    output_dir: Path,
+    target_mb: float,
+    progress: ProgressCallback | None = None,
+) -> Path:
     generated: list[tuple[Path, str]] = []
     target_bytes = max(32_000, int(target_mb * 1024 * 1024))
-    for source, original_name in files:
+    for index, (source, original_name) in enumerate(files):
+        _file_progress(progress, index, len(files), original_name, 5)
         name = f"{_safe_stem(original_name)}_compressed.jpg"
         destination = _unique_path(output_dir, name)
         _compress_image(source, destination, target_bytes)
         generated.append((destination, destination.name))
-    if len(generated) == 1:
-        return generated[0][0]
-    return _zip_paths(output_dir / "compressed_images.zip", generated)
+        _file_progress(progress, index, len(files), original_name, 100)
+    result = generated[0][0] if len(generated) == 1 else _zip_paths(output_dir / "compressed_images.zip", generated)
+    _report(progress, 98)
+    return result
 
 
-def images_to_pdf(files: list[tuple[Path, str]], output_dir: Path) -> Path:
+def images_to_pdf(
+    files: list[tuple[Path, str]], output_dir: Path, progress: ProgressCallback | None = None
+) -> Path:
     pages: list[Image.Image] = []
     try:
-        for source, _ in files:
+        for index, (source, original_name) in enumerate(files):
+            _file_progress(progress, index, len(files), original_name, 10)
             image = _open_flat_image(source)
             background = Image.new("RGB", image.size, "white")
             background.paste(image, mask=image.getchannel("A"))
             pages.append(background)
+            _file_progress(progress, index, len(files), original_name, 85)
         if not pages:
             raise ConversionError("沒有可轉換的圖片。")
         destination = output_dir / "images.pdf"
         pages[0].save(destination, "PDF", save_all=True, append_images=pages[1:], resolution=150)
+        _report(progress, 98)
         return destination
     finally:
         for page in pages:
             page.close()
 
 
-def image_noise(files: list[tuple[Path, str]], output_dir: Path, ratio: float) -> Path:
+def image_noise(
+    files: list[tuple[Path, str]],
+    output_dir: Path,
+    ratio: float,
+    progress: ProgressCallback | None = None,
+) -> Path:
     generated: list[tuple[Path, str]] = []
     strength = max(0.0, min(1.0, ratio / 100.0))
-    for source, original_name in files:
+    for index, (source, original_name) in enumerate(files):
+        _file_progress(progress, index, len(files), original_name, 5)
         image = _open_flat_image(source)
         rgb = image.convert("RGB")
         noise_l = Image.effect_noise(rgb.size, 72)
@@ -187,27 +280,41 @@ def image_noise(files: list[tuple[Path, str]], output_dir: Path, ratio: float) -
         destination = _unique_path(output_dir, f"{_safe_stem(original_name)}_noise.png")
         _save_image(result, destination)
         generated.append((destination, destination.name))
-    if len(generated) == 1:
-        return generated[0][0]
-    return _zip_paths(output_dir / "noise_images.zip", generated)
+        _file_progress(progress, index, len(files), original_name, 100)
+    result_path = generated[0][0] if len(generated) == 1 else _zip_paths(output_dir / "noise_images.zip", generated)
+    _report(progress, 98)
+    return result_path
 
 
-def image_blur(files: list[tuple[Path, str]], output_dir: Path, pixels: float) -> Path:
+def image_blur(
+    files: list[tuple[Path, str]],
+    output_dir: Path,
+    pixels: float,
+    progress: ProgressCallback | None = None,
+) -> Path:
     generated: list[tuple[Path, str]] = []
-    for source, original_name in files:
+    for index, (source, original_name) in enumerate(files):
+        _file_progress(progress, index, len(files), original_name, 5)
         image = _open_flat_image(source)
         result = image.filter(ImageFilter.GaussianBlur(radius=pixels))
         destination = _unique_path(output_dir, f"{_safe_stem(original_name)}_blur.png")
         _save_image(result, destination)
         generated.append((destination, destination.name))
-    if len(generated) == 1:
-        return generated[0][0]
-    return _zip_paths(output_dir / "blurred_images.zip", generated)
+        _file_progress(progress, index, len(files), original_name, 100)
+    result_path = generated[0][0] if len(generated) == 1 else _zip_paths(output_dir / "blurred_images.zip", generated)
+    _report(progress, 98)
+    return result_path
 
 
-def video_compress(files: list[tuple[Path, str]], output_dir: Path, target_mb: float) -> Path:
+def video_compress(
+    files: list[tuple[Path, str]],
+    output_dir: Path,
+    target_mb: float,
+    progress: ProgressCallback | None = None,
+) -> Path:
     generated: list[tuple[Path, str]] = []
     for index, (source, original_name) in enumerate(files):
+        _file_progress(progress, index, len(files), original_name, 1)
         duration = _ffprobe_duration(source)
         total_kbps = max(160, int(target_mb * 8192 * 0.96 / duration))
         audio_kbps = 128 if total_kbps >= 400 else max(48, int(total_kbps * 0.22))
@@ -219,29 +326,44 @@ def video_compress(files: list[tuple[Path, str]], output_dir: Path, target_mb: f
             "-preset", "medium", "-b:v", f"{video_kbps}k", "-maxrate", f"{video_kbps}k",
             "-bufsize", f"{video_kbps * 2}k", "-pix_fmt", "yuv420p", "-passlogfile", str(passlog),
         ]
-        _run(common + ["-pass", "1", "-an", "-f", "mp4", os.devnull])
+        _run(
+            common + ["-pass", "1", "-an", "-f", "mp4", os.devnull],
+            progress_callback=lambda value, i=index, name=original_name: _file_progress(
+                progress, i, len(files), name, value * 0.48
+            ),
+            duration=duration,
+        )
         _run(
             common
             + [
                 "-pass", "2", "-map", "0:a:0?", "-c:a", "aac", "-b:a", f"{audio_kbps}k",
                 "-movflags", "+faststart", str(destination),
-            ]
+            ],
+            progress_callback=lambda value, i=index, name=original_name: _file_progress(
+                progress, i, len(files), name, 48 + value * 0.52
+            ),
+            duration=duration,
         )
         for log in output_dir.glob(f"{passlog.name}*"):
             log.unlink(missing_ok=True)
         generated.append((destination, destination.name))
-    if len(generated) == 1:
-        return generated[0][0]
-    return _zip_paths(output_dir / "compressed_videos.zip", generated)
+    result = generated[0][0] if len(generated) == 1 else _zip_paths(output_dir / "compressed_videos.zip", generated)
+    _report(progress, 98)
+    return result
 
 
 def video_frames(
-    files: list[tuple[Path, str]], output_dir: Path, frame_mode: str = "second"
+    files: list[tuple[Path, str]],
+    output_dir: Path,
+    frame_mode: str = "second",
+    progress: ProgressCallback | None = None,
 ) -> Path:
     generated: list[tuple[Path, str]] = []
     frames_root = output_dir / "frames"
     frames_root.mkdir(exist_ok=True)
-    for source, original_name in files:
+    for index, (source, original_name) in enumerate(files):
+        _file_progress(progress, index, len(files), original_name, 1)
+        duration = _ffprobe_duration(source)
         stem = _safe_stem(original_name)
         destination_dir = frames_root / stem
         suffix = 2
@@ -255,20 +377,33 @@ def video_frames(
         else:
             command += ["-vf", "fps=1"]
         command += ["-q:v", "2", str(destination_dir / "frame_%05d.jpg")]
-        _run(command)
+        _run(
+            command,
+            progress_callback=lambda value, i=index, name=original_name: _file_progress(
+                progress, i, len(files), name, value
+            ),
+            duration=duration,
+        )
         for frame in sorted(destination_dir.glob("*.jpg")):
             generated.append((frame, f"{destination_dir.name}/{frame.name}"))
     if not generated:
         raise ConversionError("影片中沒有可提取的畫面。")
-    return _zip_paths(output_dir / "video_frames.zip", generated)
+    result = _zip_paths(output_dir / "video_frames.zip", generated)
+    _report(progress, 98)
+    return result
 
 
 def video_audio(
-    files: list[tuple[Path, str]], output_dir: Path, bitrate: int | str
+    files: list[tuple[Path, str]],
+    output_dir: Path,
+    bitrate: int | str,
+    progress: ProgressCallback | None = None,
 ) -> Path:
     generated: list[tuple[Path, str]] = []
     lossless = bitrate == "lossless"
-    for source, original_name in files:
+    for index, (source, original_name) in enumerate(files):
+        _file_progress(progress, index, len(files), original_name, 1)
+        duration = _ffprobe_duration(source)
         extension = ".flac" if lossless else ".mp3"
         destination = _unique_path(output_dir, f"{_safe_stem(original_name)}_audio{extension}")
         command = ["ffmpeg", "-y", "-i", str(source), "-vn"]
@@ -276,14 +411,25 @@ def video_audio(
             command += ["-c:a", "flac", str(destination)]
         else:
             command += ["-c:a", "libmp3lame", "-b:a", f"{int(bitrate)}k", str(destination)]
-        _run(command)
+        _run(
+            command,
+            progress_callback=lambda value, i=index, name=original_name: _file_progress(
+                progress, i, len(files), name, value
+            ),
+            duration=duration,
+        )
         generated.append((destination, destination.name))
-    if len(generated) == 1:
-        return generated[0][0]
-    return _zip_paths(output_dir / "extracted_audio.zip", generated)
+    result = generated[0][0] if len(generated) == 1 else _zip_paths(output_dir / "extracted_audio.zip", generated)
+    _report(progress, 98)
+    return result
 
 
-def audio_volume(files: list[tuple[Path, str]], output_dir: Path, db: float) -> Path:
+def audio_volume(
+    files: list[tuple[Path, str]],
+    output_dir: Path,
+    db: float,
+    progress: ProgressCallback | None = None,
+) -> Path:
     generated: list[tuple[Path, str]] = []
     codec_by_suffix = {
         ".mp3": ("libmp3lame", ".mp3"),
@@ -294,31 +440,44 @@ def audio_volume(files: list[tuple[Path, str]], output_dir: Path, db: float) -> 
         ".ogg": ("libvorbis", ".ogg"),
         ".opus": ("libopus", ".opus"),
     }
-    for source, original_name in files:
+    for index, (source, original_name) in enumerate(files):
+        _file_progress(progress, index, len(files), original_name, 1)
+        duration = _ffprobe_duration(source)
         codec, extension = codec_by_suffix.get(Path(original_name).suffix.lower(), ("libmp3lame", ".mp3"))
         destination = _unique_path(output_dir, f"{_safe_stem(original_name)}_{db:+g}dB{extension}")
-        _run([
-            "ffmpeg", "-y", "-i", str(source), "-filter:a", f"volume={db}dB",
-            "-c:a", codec, str(destination),
-        ])
+        _run(
+            [
+                "ffmpeg", "-y", "-i", str(source), "-filter:a", f"volume={db}dB",
+                "-c:a", codec, str(destination),
+            ],
+            progress_callback=lambda value, i=index, name=original_name: _file_progress(
+                progress, i, len(files), name, value
+            ),
+            duration=duration,
+        )
         generated.append((destination, destination.name))
-    if len(generated) == 1:
-        return generated[0][0]
-    return _zip_paths(output_dir / "adjusted_audio.zip", generated)
+    result = generated[0][0] if len(generated) == 1 else _zip_paths(output_dir / "adjusted_audio.zip", generated)
+    _report(progress, 98)
+    return result
 
 
-def merge_pdfs(files: list[tuple[Path, str]], output_dir: Path) -> Path:
+def merge_pdfs(
+    files: list[tuple[Path, str]], output_dir: Path, progress: ProgressCallback | None = None
+) -> Path:
     writer = PdfWriter()
     try:
-        for source, _ in files:
+        for index, (source, original_name) in enumerate(files):
+            _file_progress(progress, index, len(files), original_name, 5)
             reader = PdfReader(str(source))
             if reader.is_encrypted:
                 raise ConversionError("暫不支援有密碼保護的 PDF。")
             for page in reader.pages:
                 writer.add_page(page)
+            _file_progress(progress, index, len(files), original_name, 90)
         destination = output_dir / "merged.pdf"
         with destination.open("wb") as handle:
             writer.write(handle)
+        _report(progress, 98)
         return destination
     except ConversionError:
         raise
@@ -328,7 +487,9 @@ def merge_pdfs(files: list[tuple[Path, str]], output_dir: Path) -> Path:
         writer.close()
 
 
-def pdf_to_images(files: list[tuple[Path, str]], output_dir: Path) -> Path:
+def pdf_to_images(
+    files: list[tuple[Path, str]], output_dir: Path, progress: ProgressCallback | None = None
+) -> Path:
     try:
         import fitz
     except ImportError as exc:
@@ -337,17 +498,20 @@ def pdf_to_images(files: list[tuple[Path, str]], output_dir: Path) -> Path:
     generated: list[tuple[Path, str]] = []
     images_root = output_dir / "pdf_images"
     images_root.mkdir(exist_ok=True)
-    for source, original_name in files:
+    for index, (source, original_name) in enumerate(files):
+        _file_progress(progress, index, len(files), original_name, 1)
         stem = _safe_stem(original_name)
         try:
             document = fitz.open(source)
             if document.needs_pass:
                 raise ConversionError("暫不支援有密碼保護的 PDF。")
+            page_count = max(document.page_count, 1)
             for number, page in enumerate(document, start=1):
                 destination = images_root / f"{stem}_page_{number:03d}.png"
                 pixmap = page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
                 pixmap.save(destination)
                 generated.append((destination, f"{stem}/{destination.name}"))
+                _file_progress(progress, index, len(files), original_name, number / page_count * 100)
             document.close()
         except ConversionError:
             raise
@@ -355,7 +519,9 @@ def pdf_to_images(files: list[tuple[Path, str]], output_dir: Path) -> Path:
             raise ConversionError(f"無法轉換 {original_name}。") from exc
     if not generated:
         raise ConversionError("PDF 中沒有可轉換的頁面。")
-    return _zip_paths(output_dir / "pdf_images.zip", generated)
+    result = _zip_paths(output_dir / "pdf_images.zip", generated)
+    _report(progress, 98)
+    return result
 
 
 def convert(
@@ -364,31 +530,34 @@ def convert(
     files: list[tuple[Path, str]],
     output_dir: Path,
     options: dict,
+    progress: ProgressCallback | None = None,
 ) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     try:
         if category == "image" and mode == "compress":
-            return image_compress(files, output_dir, float(options["target_mb"]))
+            return image_compress(files, output_dir, float(options["target_mb"]), progress)
         if category == "image" and mode == "to_pdf":
-            return images_to_pdf(files, output_dir)
+            return images_to_pdf(files, output_dir, progress)
         if category == "image" and mode == "noise":
-            return image_noise(files, output_dir, float(options["ratio"]))
+            return image_noise(files, output_dir, float(options["ratio"]), progress)
         if category == "image" and mode == "blur":
-            return image_blur(files, output_dir, float(options["pixels"]))
+            return image_blur(files, output_dir, float(options["pixels"]), progress)
         if category == "video" and mode == "compress":
-            return video_compress(files, output_dir, float(options["target_mb"]))
+            return video_compress(files, output_dir, float(options["target_mb"]), progress)
         if category == "video" and mode == "extract_frames":
-            return video_frames(files, output_dir, options.get("frame_mode", "second"))
+            return video_frames(files, output_dir, options.get("frame_mode", "second"), progress)
         if category == "video" and mode == "extract_audio":
             bitrate = options.get("bitrate", 128)
-            return video_audio(files, output_dir, bitrate if bitrate == "lossless" else int(bitrate))
+            return video_audio(
+                files, output_dir, bitrate if bitrate == "lossless" else int(bitrate), progress
+            )
         if category == "audio" and mode == "volume":
-            return audio_volume(files, output_dir, float(options["db"]))
+            return audio_volume(files, output_dir, float(options["db"]), progress)
         if category == "pdf" and mode == "merge":
-            return merge_pdfs(files, output_dir)
+            return merge_pdfs(files, output_dir, progress)
         if category == "pdf" and mode == "to_images":
-            return pdf_to_images(files, output_dir)
+            return pdf_to_images(files, output_dir, progress)
     except (KeyError, TypeError, ValueError) as exc:
         raise ConversionError("轉換設定不完整或數值格式不正確。") from exc
 

@@ -4,6 +4,7 @@ import json
 import mimetypes
 import os
 import shutil
+import threading
 import time
 import uuid
 from pathlib import Path
@@ -24,6 +25,9 @@ app.config.update(
     MAX_CONTENT_LENGTH=2 * 1024 * 1024 * 1024,
     JSON_AS_ASCII=False,
 )
+
+conversion_tasks: dict[str, dict] = {}
+conversion_tasks_lock = threading.Lock()
 
 CATEGORY_EXTENSIONS = {
     "image": {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tif", ".tiff", ".gif"},
@@ -71,12 +75,92 @@ def _write_metadata(job_dir: Path, metadata: dict) -> None:
     )
 
 
+def _task_snapshot(job_id: str) -> dict | None:
+    with conversion_tasks_lock:
+        task = conversion_tasks.get(job_id)
+        return dict(task) if task else None
+
+
+def _update_task(job_id: str, **values) -> None:
+    with conversion_tasks_lock:
+        task = conversion_tasks.setdefault(job_id, {})
+        if "progress" in values:
+            values["progress"] = max(float(task.get("progress", 0)), float(values["progress"]))
+        task.update(values)
+
+
+def _start_task(job_id: str) -> None:
+    with conversion_tasks_lock:
+        conversion_tasks[job_id] = {
+            "status": "queued",
+            "progress": 0,
+            "filename": None,
+            "error": None,
+        }
+
+
+def _run_conversion(
+    job_id: str,
+    job_dir: Path,
+    metadata: dict,
+    category: str,
+    mode: str,
+    files: list[tuple[Path, str]],
+    options: dict,
+) -> None:
+    with app.app_context():
+        try:
+            output_dir = job_dir / "output"
+            reset_output_dir(output_dir)
+            _update_task(job_id, status="processing", progress=1, filename=None)
+
+            def report(percent: float, filename: str | None = None) -> None:
+                _update_task(
+                    job_id,
+                    status="processing",
+                    progress=round(percent, 1),
+                    filename=filename,
+                )
+
+            result = convert(category, mode, files, output_dir, options, report)
+            if not result.is_file():
+                raise ConversionError("轉換沒有產生輸出檔案。")
+
+            _update_task(job_id, status="finalizing", progress=99, filename=None)
+            metadata["result"] = {
+                "name": result.name,
+                "size": result.stat().st_size,
+                "created_at": time.time(),
+            }
+            _write_metadata(job_dir, metadata)
+            _update_task(
+                job_id,
+                status="completed",
+                progress=100,
+                filename=result.name,
+                size=result.stat().st_size,
+                download_url=f"/api/jobs/{job_id}/download",
+            )
+        except ConversionError as exc:
+            _update_task(job_id, status="failed", error=str(exc), filename=None)
+        except Exception:
+            app.logger.exception("Background conversion failed")
+            _update_task(
+                job_id,
+                status="failed",
+                error="轉換時發生未預期的錯誤。",
+                filename=None,
+            )
+
+
 def _cleanup_expired_jobs(max_age_hours: int = 24) -> None:
     cutoff = time.time() - max_age_hours * 3600
     try:
         for path in JOBS_DIR.iterdir():
             if path.is_dir() and path.stat().st_mtime < cutoff:
                 shutil.rmtree(path, ignore_errors=True)
+                with conversion_tasks_lock:
+                    conversion_tasks.pop(path.name, None)
     except OSError:
         pass
 
@@ -236,39 +320,56 @@ def convert_files():
     if category == "pdf" and mode == "merge" and len(order) < 2:
         return _json_error("連接 PDF 至少需要兩個檔案。")
 
+    active_task = _task_snapshot(metadata["job_id"])
+    if active_task and active_task.get("status") in {"queued", "processing", "finalizing"}:
+        return _json_error("此工作正在處理中，請稍候。", 409)
+
     try:
         options = _validate_options(category, mode, payload.get("options") or {})
-        files = [
-            (job_dir / "uploads" / records_by_id[file_id]["stored_name"], records_by_id[file_id]["original_name"])
-            for file_id in order
-        ]
-        if any(not path.is_file() for path, _ in files):
-            return _json_error("部分上傳檔案已不存在，請重新上傳。", 404)
-
-        output_dir = job_dir / "output"
-        reset_output_dir(output_dir)
-        result = convert(category, mode, files, output_dir, options)
-        if not result.is_file():
-            raise ConversionError("轉換沒有產生輸出檔案。")
-        metadata["result"] = {
-            "name": result.name,
-            "size": result.stat().st_size,
-            "created_at": time.time(),
-        }
-        _write_metadata(job_dir, metadata)
-        return jsonify(
-            {
-                "ok": True,
-                "filename": result.name,
-                "size": result.stat().st_size,
-                "download_url": f"/api/jobs/{metadata['job_id']}/download",
-            }
-        )
     except ConversionError as exc:
         return _json_error(str(exc))
-    except Exception:
-        app.logger.exception("Conversion failed")
-        return _json_error("轉換時發生未預期的錯誤。", 500)
+
+    files = [
+        (
+            job_dir / "uploads" / records_by_id[file_id]["stored_name"],
+            records_by_id[file_id]["original_name"],
+        )
+        for file_id in order
+    ]
+    if any(not path.is_file() for path, _ in files):
+        return _json_error("部分上傳檔案已不存在，請重新上傳。", 404)
+
+    metadata["result"] = None
+    _write_metadata(job_dir, metadata)
+    _start_task(metadata["job_id"])
+    worker = threading.Thread(
+        target=_run_conversion,
+        args=(metadata["job_id"], job_dir, metadata, category, mode, files, options),
+        name=f"conversion-{metadata['job_id'][:8]}",
+        daemon=True,
+    )
+    worker.start()
+    return (
+        jsonify(
+            {
+                "ok": True,
+                "status": "queued",
+                "status_url": f"/api/jobs/{metadata['job_id']}/status",
+            }
+        ),
+        202,
+    )
+
+
+@app.get("/api/jobs/<job_id>/status")
+def conversion_status(job_id: str):
+    job_dir = _job_dir(job_id)
+    if not job_dir or not job_dir.is_dir():
+        return _json_error("上傳記錄不存在或已過期。", 404)
+    task = _task_snapshot(job_id)
+    if not task:
+        return jsonify({"ok": True, "status": "idle", "progress": 0})
+    return jsonify({"ok": True, **task})
 
 
 @app.get("/api/jobs/<job_id>/download")

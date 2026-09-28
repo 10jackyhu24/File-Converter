@@ -213,7 +213,13 @@
       <div class="spinner"><span></span></div>
       <h2 id="progressTitle" data-i18n="processing">正在處理檔案</h2>
       <p id="progressMessage" data-i18n="processingHint">所需時間取決於檔案大小，請不要關閉頁面。</p>
-      <div class="progress-track"><span></span></div>
+      <div class="progress-details">
+        <span id="progressStatus" data-i18n="preparing">準備中…</span>
+        <strong id="progressPercent">0%</strong>
+      </div>
+      <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <span id="progressBar"></span>
+      </div>
     </div>
   </div>
 

@@ -851,9 +851,35 @@ html[data-theme="dark"] .theme-icon-moon { display: none; }
 .modal-card h2 { margin: 0; font-size: 25px; }
 .modal-card p { margin: 12px auto 0; color: var(--ink-soft); font-size: 13px; line-height: 1.65; }
 
-.progress-track { height: 6px; margin-top: 28px; overflow: hidden; border-radius: 3px; background: #e5eceb; }
-.progress-track span { display: block; width: 45%; height: 100%; border-radius: inherit; background: var(--brand); animation: progress 1.35s ease-in-out infinite; }
-@keyframes progress { 0% { transform: translateX(-110%); } 100% { transform: translateX(270%); } }
+.progress-details {
+  margin-top: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--ink-soft);
+  font-size: 11px;
+  text-align: left;
+}
+
+.progress-details span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progress-details strong { flex: none; color: var(--brand); font-size: 13px; }
+.progress-track { height: 7px; margin-top: 9px; overflow: hidden; border-radius: 4px; background: #e5eceb; }
+.progress-track span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--brand), #61c4c6);
+  box-shadow: 0 0 12px rgba(78, 175, 185, .34);
+  transition: width .28s ease;
+}
 
 .success-icon {
   width: 68px;

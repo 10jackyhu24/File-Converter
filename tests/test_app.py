@@ -3,6 +3,7 @@ from __future__ import annotations
 import io
 import subprocess
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -87,9 +88,22 @@ class FileConverterSmokeTests(unittest.TestCase):
                 "options": options or {},
             },
         )
-        self.assertEqual(response.status_code, 200, response.get_data(as_text=True))
-        payload = response.get_json()
-        self.assertTrue(payload["ok"])
+        self.assertEqual(response.status_code, 202, response.get_data(as_text=True))
+        queued = response.get_json()
+        self.assertTrue(queued["ok"])
+        payload = None
+        for _ in range(600):
+            status_response = self.client.get(queued["status_url"])
+            self.assertEqual(status_response.status_code, 200)
+            status = status_response.get_json()
+            if status["status"] == "completed":
+                payload = status
+                break
+            if status["status"] == "failed":
+                self.fail(status.get("error", "Conversion failed"))
+            time.sleep(0.05)
+        self.assertIsNotNone(payload, "Conversion did not complete in time")
+        self.assertEqual(payload["progress"], 100)
         download = self.client.get(payload["download_url"])
         self.assertEqual(download.status_code, 200)
         self.assertGreater(len(download.get_data()), 10)
