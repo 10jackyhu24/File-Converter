@@ -352,6 +352,57 @@ def video_compress(
     return result
 
 
+def video_split(
+    files: list[tuple[Path, str]],
+    output_dir: Path,
+    segment_minutes: float,
+    progress: ProgressCallback | None = None,
+) -> Path:
+    generated: list[tuple[Path, str]] = []
+    segments_root = output_dir / "segments"
+    segments_root.mkdir(exist_ok=True)
+    segment_seconds = max(1.0, segment_minutes * 60.0)
+
+    for index, (source, original_name) in enumerate(files):
+        _file_progress(progress, index, len(files), original_name, 1)
+        duration = _ffprobe_duration(source)
+        stem = _safe_stem(original_name)
+        destination_dir = segments_root / f"{stem}_segments"
+        suffix = 2
+        while destination_dir.exists():
+            destination_dir = segments_root / f"{stem}_segments_{suffix}"
+            suffix += 1
+        destination_dir.mkdir()
+        output_pattern = destination_dir / "part_%03d.mp4"
+        command = [
+            "ffmpeg", "-y", "-i", str(source),
+            "-map", "0:v:0", "-map", "0:a:0?",
+            "-c:v", "libx264", "-preset", "medium", "-crf", "20",
+            "-pix_fmt", "yuv420p", "-sc_threshold", "0",
+            "-force_key_frames", f"expr:gte(t,n_forced*{segment_seconds:g})",
+            "-c:a", "aac", "-b:a", "192k",
+            "-f", "segment", "-segment_time", f"{segment_seconds:g}",
+            "-segment_time_delta", "0.05", "-segment_start_number", "1",
+            "-reset_timestamps", "1", str(output_pattern),
+        ]
+        _run(
+            command,
+            progress_callback=lambda value, i=index, name=original_name: _file_progress(
+                progress, i, len(files), name, value
+            ),
+            duration=duration,
+        )
+        segments = sorted(destination_dir.glob("part_*.mp4"))
+        if not segments:
+            raise ConversionError(f"無法分割 {original_name}。")
+        for segment in segments:
+            generated.append((segment, f"{destination_dir.name}/{segment.name}"))
+
+    result = _zip_paths(output_dir / "split_videos.zip", generated)
+    _report(progress, 98)
+    return result
+
+
 def video_frames(
     files: list[tuple[Path, str]],
     output_dir: Path,
@@ -545,6 +596,10 @@ def convert(
             return image_blur(files, output_dir, float(options["pixels"]), progress)
         if category == "video" and mode == "compress":
             return video_compress(files, output_dir, float(options["target_mb"]), progress)
+        if category == "video" and mode == "split":
+            return video_split(
+                files, output_dir, float(options["segment_minutes"]), progress
+            )
         if category == "video" and mode == "extract_frames":
             return video_frames(files, output_dir, options.get("frame_mode", "second"), progress)
         if category == "video" and mode == "extract_audio":

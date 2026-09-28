@@ -18,18 +18,18 @@ const translations = {
     hint_audio: "支援 MP3、WAV、M4A、AAC、OGG、FLAC、OPUS",
     hint_pdf: "支援 PDF；連接時可拖曳調整頁面順序",
     m_image_compress: "壓縮檔案大小", m_image_to_pdf: "轉 PDF", m_image_noise: "添加雜訊", m_image_blur: "模糊處理",
-    m_video_compress: "壓縮檔案大小", m_video_extract_frames: "提取圖片", m_video_extract_audio: "提取音檔",
+    m_video_compress: "壓縮檔案大小", m_video_split: "分割影片", m_video_extract_frames: "提取圖片", m_video_extract_audio: "提取音檔",
     m_audio_volume: "音量調整", m_pdf_merge: "連接 PDF", m_pdf_to_images: "轉圖片",
     title_image_compress: "壓縮圖片", title_image_to_pdf: "圖片轉 PDF", title_image_noise: "為圖片添加雜訊", title_image_blur: "模糊圖片",
-    title_video_compress: "壓縮影片", title_video_extract_frames: "從影片提取圖片", title_video_extract_audio: "從影片提取音檔",
+    title_video_compress: "壓縮影片", title_video_split: "分割影片", title_video_extract_frames: "從影片提取圖片", title_video_extract_audio: "從影片提取音檔",
     title_audio_volume: "調整音量", title_pdf_merge: "連接 PDF", title_pdf_to_images: "PDF 轉圖片",
     desc_image_compress: "上傳圖片並設定需要的檔案大小。", desc_image_to_pdf: "依照排列順序，將多張圖片合成一份 PDF。",
     desc_image_noise: "用可調整的比例為圖片加入隨機顆粒。", desc_image_blur: "套用高斯模糊，像素越高效果越強。",
-    desc_video_compress: "在盡量保留畫質的前提下縮小影片檔案。", desc_video_extract_frames: "將影片畫面提取為高畫質 JPG 圖片並打包下載。",
+    desc_video_compress: "在盡量保留畫質的前提下縮小影片檔案。", desc_video_split: "依照指定時間將影片精準分割，並將所有片段打包下載。", desc_video_extract_frames: "將影片畫面提取為高畫質 JPG 圖片並打包下載。",
     desc_video_extract_audio: "將影片中的聲音輸出成 MP3 或無損 FLAC。", desc_audio_volume: "以 dB 為單位增加或降低音檔音量。",
     desc_pdf_merge: "拖曳調整檔案順序，再合併成單一 PDF。", desc_pdf_to_images: "將 PDF 每一頁轉為高解析 PNG 圖片。",
     oh_target: "選擇壓縮後的檔案大小", oh_noise: "選擇雜訊強度", oh_blur: "選擇模糊程度", oh_audio: "選擇輸出音質",
-    oh_volume: "設定音量變化", oh_order: "確認檔案順序", oh_ready: "確認轉換設定", oh_frames: "選擇圖片提取頻率",
+    oh_volume: "設定音量變化", oh_order: "確認檔案順序", oh_ready: "確認轉換設定", oh_frames: "選擇圖片提取頻率", oh_segments: "選擇每段影片長度",
     preset_discord: "20 MB (Discord)", customSize: "自訂大小", custom: "自訂", weak: "弱", medium: "中", strong: "強",
     ratio5: "比例 5%", ratio10: "比例 10%", ratio20: "比例 20%", pixels2: "2 像素", pixels10: "10 像素", pixels30: "30 像素",
     low: "低", high: "高", lossless: "無損", kbps64: "64 kbps", kbps128: "128 kbps", kbps256: "256 kbps", losslessFlac: "FLAC 原始品質",
@@ -37,6 +37,7 @@ const translations = {
     single_to_pdf: "合併成一份 PDF", single_to_pdf_desc: "將依照上方檔案順序建立 PDF，每張圖片一頁。",
     single_frames: "每秒提取一張圖片", single_frames_desc: "圖片將以 JPG 格式存入 ZIP 壓縮檔。",
     frameSecond: "每秒一張", frameSecondDetail: "適合快速預覽，輸出數量較少", frameEvery: "每一幀", frameEveryDetail: "保留影片的所有畫面，可能產生大量檔案",
+    instagramStory: "Instagram Story", instagramStoryDetail: "每 1 分鐘分割一段", customSegment: "自訂每段長度", customSegmentDetail: "輸入每段影片的分鐘數", minuteUnit: "分鐘",
     single_merge: "依目前順序連接", single_merge_desc: "第一個檔案會出現在合併結果的最前面。",
     single_pdf_images: "將每一頁轉為 PNG", single_pdf_images_desc: "輸出為 144 DPI 圖片並集中打包成 ZIP。",
     customValue: "自訂數值", filesUnit: "個檔案"
@@ -58,18 +59,18 @@ const translations = {
     hint_audio: "Supports MP3, WAV, M4A, AAC, OGG, FLAC and OPUS",
     hint_pdf: "Supports PDF; drag to set the merge order",
     m_image_compress: "Compress size", m_image_to_pdf: "Convert to PDF", m_image_noise: "Add noise", m_image_blur: "Blur",
-    m_video_compress: "Compress size", m_video_extract_frames: "Extract images", m_video_extract_audio: "Extract audio",
+    m_video_compress: "Compress size", m_video_split: "Split video", m_video_extract_frames: "Extract images", m_video_extract_audio: "Extract audio",
     m_audio_volume: "Adjust volume", m_pdf_merge: "Merge PDFs", m_pdf_to_images: "Convert to images",
     title_image_compress: "Compress images", title_image_to_pdf: "Images to PDF", title_image_noise: "Add image noise", title_image_blur: "Blur images",
-    title_video_compress: "Compress videos", title_video_extract_frames: "Extract video frames", title_video_extract_audio: "Extract video audio",
+    title_video_compress: "Compress videos", title_video_split: "Split video", title_video_extract_frames: "Extract video frames", title_video_extract_audio: "Extract video audio",
     title_audio_volume: "Adjust audio volume", title_pdf_merge: "Merge PDFs", title_pdf_to_images: "PDF to images",
     desc_image_compress: "Upload images and choose a target file size.", desc_image_to_pdf: "Combine images into one PDF in the displayed order.",
     desc_image_noise: "Add adjustable random grain to your images.", desc_image_blur: "Apply Gaussian blur; a higher pixel value creates a stronger effect.",
-    desc_video_compress: "Reduce video size while preserving as much quality as possible.", desc_video_extract_frames: "Extract video frames as high-quality JPG images in a ZIP file.",
+    desc_video_compress: "Reduce video size while preserving as much quality as possible.", desc_video_split: "Split videos precisely at the selected interval and download all clips as a ZIP file.", desc_video_extract_frames: "Extract video frames as high-quality JPG images in a ZIP file.",
     desc_video_extract_audio: "Export the video's sound as MP3 or lossless FLAC.", desc_audio_volume: "Increase or reduce audio volume in decibels.",
     desc_pdf_merge: "Drag files into the right order, then merge them into one PDF.", desc_pdf_to_images: "Turn every PDF page into a high-resolution PNG image.",
     oh_target: "Choose the target file size", oh_noise: "Choose noise strength", oh_blur: "Choose blur strength", oh_audio: "Choose output quality",
-    oh_volume: "Set the volume change", oh_order: "Confirm file order", oh_ready: "Confirm conversion settings", oh_frames: "Choose the frame extraction rate",
+    oh_volume: "Set the volume change", oh_order: "Confirm file order", oh_ready: "Confirm conversion settings", oh_frames: "Choose the frame extraction rate", oh_segments: "Choose the length of each clip",
     preset_discord: "20 MB (Discord)", customSize: "Custom size", custom: "Custom", weak: "Low", medium: "Medium", strong: "High",
     ratio5: "5% ratio", ratio10: "10% ratio", ratio20: "20% ratio", pixels2: "2 pixels", pixels10: "10 pixels", pixels30: "30 pixels",
     low: "Low", high: "High", lossless: "Lossless", kbps64: "64 kbps", kbps128: "128 kbps", kbps256: "256 kbps", losslessFlac: "Original-quality FLAC",
@@ -77,6 +78,7 @@ const translations = {
     single_to_pdf: "Combine into one PDF", single_to_pdf_desc: "A PDF will be created in the order above, one image per page.",
     single_frames: "Extract one image per second", single_frames_desc: "JPG images will be placed in a ZIP archive.",
     frameSecond: "One per second", frameSecondDetail: "Best for quick previews with fewer output files", frameEvery: "Every frame", frameEveryDetail: "Keeps every video frame and may create many files",
+    instagramStory: "Instagram Story", instagramStoryDetail: "Split into one-minute clips", customSegment: "Custom clip length", customSegmentDetail: "Enter the number of minutes per clip", minuteUnit: "min",
     single_merge: "Merge in the current order", single_merge_desc: "The first file above will appear first in the merged result.",
     single_pdf_images: "Convert every page to PNG", single_pdf_images_desc: "144-DPI images will be bundled in a ZIP archive.",
     customValue: "Custom value", filesUnit: "files"
@@ -98,18 +100,18 @@ const translations = {
     hint_audio: "MP3、WAV、M4A、AAC、OGG、FLAC、OPUS に対応",
     hint_pdf: "PDF に対応；ドラッグで結合順を変更できます",
     m_image_compress: "サイズ圧縮", m_image_to_pdf: "PDFに変換", m_image_noise: "ノイズ追加", m_image_blur: "ぼかし",
-    m_video_compress: "サイズ圧縮", m_video_extract_frames: "画像を抽出", m_video_extract_audio: "音声を抽出",
+    m_video_compress: "サイズ圧縮", m_video_split: "動画を分割", m_video_extract_frames: "画像を抽出", m_video_extract_audio: "音声を抽出",
     m_audio_volume: "音量調整", m_pdf_merge: "PDFを結合", m_pdf_to_images: "画像に変換",
     title_image_compress: "画像を圧縮", title_image_to_pdf: "画像をPDFに変換", title_image_noise: "画像にノイズを追加", title_image_blur: "画像をぼかす",
-    title_video_compress: "動画を圧縮", title_video_extract_frames: "動画から画像を抽出", title_video_extract_audio: "動画から音声を抽出",
+    title_video_compress: "動画を圧縮", title_video_split: "動画を分割", title_video_extract_frames: "動画から画像を抽出", title_video_extract_audio: "動画から音声を抽出",
     title_audio_volume: "音量を調整", title_pdf_merge: "PDFを結合", title_pdf_to_images: "PDFを画像に変換",
     desc_image_compress: "画像をアップロードして目標サイズを設定します。", desc_image_to_pdf: "表示順に複数の画像を1つのPDFにまとめます。",
     desc_image_noise: "調整可能なランダムノイズを画像に追加します。", desc_image_blur: "ガウスぼかしを適用します。ピクセル値が高いほど強くなります。",
-    desc_video_compress: "画質をできるだけ保ちながら動画サイズを縮小します。", desc_video_extract_frames: "動画のフレームを高画質JPGとして抽出しZIPにまとめます。",
+    desc_video_compress: "画質をできるだけ保ちながら動画サイズを縮小します。", desc_video_split: "指定した時間ごとに動画を正確に分割し、ZIPにまとめます。", desc_video_extract_frames: "動画のフレームを高画質JPGとして抽出しZIPにまとめます。",
     desc_video_extract_audio: "動画の音声をMP3またはFLACで書き出します。", desc_audio_volume: "dB単位で音量を上げ下げします。",
     desc_pdf_merge: "ドラッグで順番を整え、1つのPDFに結合します。", desc_pdf_to_images: "PDFの各ページを高解像度PNGに変換します。",
     oh_target: "変換後のファイルサイズ", oh_noise: "ノイズ強度", oh_blur: "ぼかし強度", oh_audio: "出力音質",
-    oh_volume: "音量の変化", oh_order: "ファイル順を確認", oh_ready: "変換設定を確認", oh_frames: "画像の抽出頻度を選択",
+    oh_volume: "音量の変化", oh_order: "ファイル順を確認", oh_ready: "変換設定を確認", oh_frames: "画像の抽出頻度を選択", oh_segments: "各クリップの長さを選択",
     preset_discord: "20 MB (Discord)", customSize: "カスタムサイズ", custom: "カスタム", weak: "弱", medium: "中", strong: "強",
     ratio5: "比率 5%", ratio10: "比率 10%", ratio20: "比率 20%", pixels2: "2 ピクセル", pixels10: "10 ピクセル", pixels30: "30 ピクセル",
     low: "低", high: "高", lossless: "ロスレス", kbps64: "64 kbps", kbps128: "128 kbps", kbps256: "256 kbps", losslessFlac: "FLAC オリジナル品質",
@@ -117,6 +119,7 @@ const translations = {
     single_to_pdf: "1つのPDFに結合", single_to_pdf_desc: "上の順番で、画像1枚につき1ページのPDFを作成します。",
     single_frames: "1秒ごとに画像を抽出", single_frames_desc: "JPG画像をZIPファイルにまとめます。",
     frameSecond: "1秒ごとに1枚", frameSecondDetail: "プレビュー向けで、出力ファイル数を抑えます", frameEvery: "すべてのフレーム", frameEveryDetail: "全画面を保持するため、大量のファイルになる場合があります",
+    instagramStory: "Instagram Story", instagramStoryDetail: "1分ごとに分割", customSegment: "長さを指定", customSegmentDetail: "クリップごとの分数を入力", minuteUnit: "分",
     single_merge: "現在の順番で結合", single_merge_desc: "上の最初のファイルが結合結果の先頭になります。",
     single_pdf_images: "すべてのページをPNGに変換", single_pdf_images_desc: "144 DPI画像をZIPファイルにまとめます。",
     customValue: "カスタム値", filesUnit: "ファイル"
@@ -143,6 +146,8 @@ const categoryConfig = {
     modes: [
       { id: "compress", label: "m_video_compress", title: "title_video_compress", desc: "desc_video_compress", heading: "oh_target", field: "target_mb", defaultValue: 20,
         options: [{ value: 20, label: "preset_discord", detail: "20 MB" }, { value: "custom", label: "customSize", detail: "customValue", input: { unit: "MB", min: .1, max: 2048, step: .1, initial: 100 } }] },
+      { id: "split", label: "m_video_split", title: "title_video_split", desc: "desc_video_split", heading: "oh_segments", field: "segment_minutes", defaultValue: 1,
+        options: [{ value: 1, label: "instagramStory", detail: "instagramStoryDetail" }, { value: "custom", label: "customSegment", detail: "customSegmentDetail", input: { unitKey: "minuteUnit", min: .01, max: 1440, step: .01, initial: 5 } }] },
       { id: "extract_frames", label: "m_video_extract_frames", title: "title_video_extract_frames", desc: "desc_video_extract_frames", heading: "oh_frames", field: "frame_mode", defaultValue: "second",
         options: [{ value: "second", label: "frameSecond", detail: "frameSecondDetail" }, { value: "all", label: "frameEvery", detail: "frameEveryDetail" }] },
       { id: "extract_audio", label: "m_video_extract_audio", title: "title_video_extract_audio", desc: "desc_video_extract_audio", heading: "oh_audio", field: "bitrate", defaultValue: 128,
@@ -461,6 +466,10 @@ async function deleteUploadedFile(fileId) {
   }
 }
 
+function inputUnit(input) {
+  return input.unitKey ? t(input.unitKey) : input.unit;
+}
+
 function renderOptions() {
   const mode = currentMode();
   elements.optionsHeading.textContent = t(mode.heading);
@@ -484,7 +493,7 @@ function renderOptions() {
     let input = "";
     if (option.input) {
       const value = state.customValues[modeKey()] ?? option.input.initial;
-      input = `<label class="custom-field"><input type="number" min="${option.input.min}" max="${option.input.max}" step="${option.input.step}" value="${value}" aria-label="${t("customValue")}"><span>${option.input.unit}</span></label>`;
+      input = `<label class="custom-field"><input type="number" min="${option.input.min}" max="${option.input.max}" step="${option.input.step}" value="${value}" aria-label="${t("customValue")}"><span>${inputUnit(option.input)}</span></label>`;
     }
     row.innerHTML = `<span class="radio-dot"></span><span class="option-copy"><strong>${t(option.label)}</strong><small>${t(option.detail)}</small></span>${input}`;
     const select = () => { state.selectedValue = option.value; renderOptions(); };
@@ -510,7 +519,7 @@ function updateSelectionSummary() {
   const option = mode.options?.find((item) => String(item.value) === String(state.selectedValue));
   if (!option) return;
   if (option.input) {
-    elements.selectionSummary.textContent = `${state.customValues[modeKey()] ?? option.input.initial} ${option.input.unit}`;
+    elements.selectionSummary.textContent = `${state.customValues[modeKey()] ?? option.input.initial} ${inputUnit(option.input)}`;
   } else {
     elements.selectionSummary.textContent = `${t(option.label)} · ${t(option.detail)}`;
   }
@@ -524,7 +533,7 @@ function conversionOptions() {
   if (option?.input) {
     value = Number(state.customValues[modeKey()] ?? option.input.initial);
     if (!Number.isFinite(value) || value < option.input.min || value > option.input.max) {
-      throw new Error(`${t("customValue")}: ${option.input.min}–${option.input.max} ${option.input.unit}`);
+      throw new Error(`${t("customValue")}: ${option.input.min}–${option.input.max} ${inputUnit(option.input)}`);
     }
   }
   return { [mode.field]: value };

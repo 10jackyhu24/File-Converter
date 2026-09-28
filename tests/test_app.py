@@ -5,6 +5,7 @@ import subprocess
 import tempfile
 import time
 import unittest
+import zipfile
 from pathlib import Path
 
 from PIL import Image
@@ -106,8 +107,10 @@ class FileConverterSmokeTests(unittest.TestCase):
         self.assertEqual(payload["progress"], 100)
         download = self.client.get(payload["download_url"])
         self.assertEqual(download.status_code, 200)
-        self.assertGreater(len(download.get_data()), 10)
+        download_data = download.get_data()
+        self.assertGreater(len(download_data), 10)
         download.close()
+        payload["_download_data"] = download_data
         return payload
 
     def test_index_and_health(self):
@@ -133,6 +136,9 @@ class FileConverterSmokeTests(unittest.TestCase):
     def test_all_video_modes(self):
         upload = self.upload("video", [(self.video_path.read_bytes(), "clip.mp4")])
         self.convert(upload, "compress", {"target_mb": 1})
+        split = self.convert(upload, "split", {"segment_minutes": 0.01})
+        with zipfile.ZipFile(io.BytesIO(split["_download_data"])) as archive:
+            self.assertGreaterEqual(len(archive.namelist()), 2)
         self.convert(upload, "extract_frames", {"frame_mode": "second"})
         self.convert(upload, "extract_frames", {"frame_mode": "all"})
         self.convert(upload, "extract_audio", {"bitrate": 64})

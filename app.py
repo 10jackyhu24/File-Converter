@@ -38,7 +38,7 @@ CATEGORY_EXTENSIONS = {
 
 VALID_MODES = {
     "image": {"compress", "to_pdf", "noise", "blur"},
-    "video": {"compress", "extract_frames", "extract_audio"},
+    "video": {"compress", "split", "extract_frames", "extract_audio"},
     "audio": {"volume"},
     "pdf": {"merge", "to_images"},
 }
@@ -196,6 +196,12 @@ def _validate_options(category: str, mode: str, options: dict) -> dict:
         if bitrate == "lossless":
             return {"bitrate": bitrate}
         return {"bitrate": int(_number(bitrate, "音訊位元率", 16, 512))}
+    if category == "video" and mode == "split":
+        return {
+            "segment_minutes": _number(
+                options.get("segment_minutes"), "每段分鐘數", 0.01, 1440
+            )
+        }
     if category == "video" and mode == "extract_frames":
         frame_mode = options.get("frame_mode", "second")
         if frame_mode not in {"second", "all"}:
