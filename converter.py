@@ -512,6 +512,121 @@ def audio_volume(
     return result
 
 
+def pdf_compress(
+    files: list[tuple[Path, str]],
+    output_dir: Path,
+    target_mb: float,
+    progress: ProgressCallback | None = None,
+) -> Path:
+    try:
+        import fitz
+    except ImportError as exc:
+        raise ConversionError("缺少 PyMuPDF，請執行 pip install -r requirements.txt。") from exc
+
+    target_bytes = max(32_000, int(target_mb * 1024 * 1024))
+    generated: list[tuple[Path, str]] = []
+    profiles = [
+        (320, 300, 94),
+        (280, 260, 92),
+        (240, 220, 90),
+        (210, 190, 87),
+        (180, 160, 84),
+        (150, 135, 80),
+        (125, 110, 74),
+        (100, 90, 68),
+        (73, 72, 60),
+    ]
+
+    for index, (source, original_name) in enumerate(files):
+        _file_progress(progress, index, len(files), original_name, 1)
+        work_dir = output_dir / f"pdf_compress_{index}"
+        work_dir.mkdir()
+        best_path = source
+        best_size = source.stat().st_size
+        has_images = False
+
+        try:
+            lossless_path = work_dir / "lossless.pdf"
+            document = fitz.open(source)
+            if document.needs_pass:
+                document.close()
+                raise ConversionError("暫不支援有密碼保護的 PDF。")
+            has_images = any(page.get_images(full=True) for page in document)
+            document.save(
+                lossless_path,
+                garbage=4,
+                clean=True,
+                deflate=True,
+                deflate_images=True,
+                deflate_fonts=True,
+                use_objstms=1,
+                compression_effort=100,
+            )
+            document.close()
+            if lossless_path.stat().st_size < best_size:
+                best_path = lossless_path
+                best_size = lossless_path.stat().st_size
+            _file_progress(progress, index, len(files), original_name, 16)
+
+            if best_size > target_bytes and has_images:
+                for profile_index, (threshold, dpi, quality) in enumerate(profiles):
+                    candidate = work_dir / f"candidate_{profile_index}.pdf"
+                    document = fitz.open(source)
+                    document.rewrite_images(
+                        dpi_threshold=threshold,
+                        dpi_target=dpi,
+                        quality=quality,
+                        lossy=True,
+                        lossless=True,
+                        bitonal=False,
+                        color=True,
+                        gray=True,
+                    )
+                    document.save(
+                        candidate,
+                        garbage=4,
+                        clean=True,
+                        deflate=True,
+                        deflate_images=True,
+                        deflate_fonts=True,
+                        use_objstms=1,
+                        compression_effort=100,
+                    )
+                    document.close()
+                    candidate_size = candidate.stat().st_size
+                    if candidate_size < best_size:
+                        best_path = candidate
+                        best_size = candidate_size
+                    local_percent = 16 + (profile_index + 1) / len(profiles) * 79
+                    _file_progress(
+                        progress, index, len(files), original_name, local_percent
+                    )
+                    if candidate_size <= target_bytes:
+                        best_path = candidate
+                        break
+
+            destination = _unique_path(
+                output_dir, f"{_safe_stem(original_name)}_compressed.pdf"
+            )
+            shutil.copyfile(best_path, destination)
+            generated.append((destination, destination.name))
+            _file_progress(progress, index, len(files), original_name, 100)
+        except ConversionError:
+            raise
+        except Exception as exc:
+            raise ConversionError(f"無法壓縮 {original_name}。") from exc
+        finally:
+            shutil.rmtree(work_dir, ignore_errors=True)
+
+    result = (
+        generated[0][0]
+        if len(generated) == 1
+        else _zip_paths(output_dir / "compressed_pdfs.zip", generated)
+    )
+    _report(progress, 98)
+    return result
+
+
 def merge_pdfs(
     files: list[tuple[Path, str]], output_dir: Path, progress: ProgressCallback | None = None
 ) -> Path:
@@ -609,6 +724,10 @@ def convert(
             )
         if category == "audio" and mode == "volume":
             return audio_volume(files, output_dir, float(options["db"]), progress)
+        if category == "pdf" and mode == "compress":
+            return pdf_compress(
+                files, output_dir, float(options["target_mb"]), progress
+            )
         if category == "pdf" and mode == "merge":
             return merge_pdfs(files, output_dir, progress)
         if category == "pdf" and mode == "to_images":

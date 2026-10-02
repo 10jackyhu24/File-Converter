@@ -40,7 +40,7 @@ VALID_MODES = {
     "image": {"compress", "to_pdf", "noise", "blur"},
     "video": {"compress", "split", "extract_frames", "extract_audio"},
     "audio": {"volume"},
-    "pdf": {"merge", "to_images"},
+    "pdf": {"compress", "merge", "to_images"},
 }
 
 
@@ -185,7 +185,7 @@ def _number(value, label: str, minimum: float, maximum: float) -> float:
 
 
 def _validate_options(category: str, mode: str, options: dict) -> dict:
-    if category in {"image", "video"} and mode == "compress":
+    if category in {"image", "video", "pdf"} and mode == "compress":
         return {"target_mb": _number(options.get("target_mb"), "目標大小", 0.1, 2048)}
     if category == "image" and mode == "noise":
         return {"ratio": _number(options.get("ratio"), "雜訊比例", 0, 100)}

@@ -27,6 +27,7 @@ class FileConverterSmokeTests(unittest.TestCase):
         cls.image_bytes_2 = cls.make_image("#1d7b83")
         cls.pdf_bytes = cls.make_pdf("#e27752")
         cls.pdf_bytes_2 = cls.make_pdf("#1d7b83")
+        cls.large_pdf_bytes = cls.make_large_pdf()
 
         cls.media_dir = cls.root / "media"
         cls.media_dir.mkdir()
@@ -66,6 +67,14 @@ class FileConverterSmokeTests(unittest.TestCase):
     def make_pdf(color: str) -> bytes:
         output = io.BytesIO()
         Image.new("RGB", (160, 100), color).save(output, "PDF")
+        return output.getvalue()
+
+    @staticmethod
+    def make_large_pdf() -> bytes:
+        output = io.BytesIO()
+        image = Image.effect_noise((1000, 1000), 90).convert("RGB")
+        image.save(output, "PDF", quality=95, resolution=150)
+        image.close()
         return output.getvalue()
 
     def upload(self, category: str, files: list[tuple[bytes, str]]):
@@ -126,8 +135,15 @@ class FileConverterSmokeTests(unittest.TestCase):
 
     def test_all_pdf_modes(self):
         upload = self.upload("pdf", [(self.pdf_bytes, "one.pdf"), (self.pdf_bytes_2, "two.pdf")])
-        self.convert(upload, "merge")
+        self.convert(upload, "compress", {"target_mb": 1})
         self.convert(upload, "to_images")
+        self.convert(upload, "merge")
+
+    def test_pdf_compression_reduces_image_pdf(self):
+        upload = self.upload("pdf", [(self.large_pdf_bytes, "image-heavy.pdf")])
+        compressed = self.convert(upload, "compress", {"target_mb": 0.1})
+        self.assertTrue(compressed["_download_data"].startswith(b"%PDF"))
+        self.assertLess(len(compressed["_download_data"]), len(self.large_pdf_bytes))
 
     def test_audio_volume(self):
         upload = self.upload("audio", [(self.audio_path.read_bytes(), "tone.wav")])
