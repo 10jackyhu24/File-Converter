@@ -690,6 +690,41 @@ def pdf_to_images(
     return result
 
 
+def markdown_to_pdf(
+    files: list[tuple[Path, str]],
+    output_dir: Path,
+    options: dict,
+    progress: ProgressCallback | None = None,
+) -> Path:
+    from markdown_converter import MarkdownRenderError, render_markdown_pdf
+
+    generated: list[tuple[Path, str]] = []
+    for index, (source, original_name) in enumerate(files):
+        _file_progress(progress, index, len(files), original_name, 5)
+        work_dir = output_dir / f"markdown_render_{index}"
+        work_dir.mkdir()
+        destination = _unique_path(output_dir, f"{_safe_stem(original_name)}.pdf")
+        try:
+            _file_progress(progress, index, len(files), original_name, 22)
+            render_markdown_pdf(source, destination, options, work_dir)
+            generated.append((destination, destination.name))
+            _file_progress(progress, index, len(files), original_name, 100)
+        except MarkdownRenderError as exc:
+            raise ConversionError(str(exc)) from exc
+        except Exception as exc:
+            raise ConversionError(f"無法將 {original_name} 轉換為 PDF。") from exc
+        finally:
+            shutil.rmtree(work_dir, ignore_errors=True)
+
+    result = (
+        generated[0][0]
+        if len(generated) == 1
+        else _zip_paths(output_dir / "markdown_pdfs.zip", generated)
+    )
+    _report(progress, 98)
+    return result
+
+
 def convert(
     category: str,
     mode: str,
@@ -732,6 +767,8 @@ def convert(
             return merge_pdfs(files, output_dir, progress)
         if category == "pdf" and mode == "to_images":
             return pdf_to_images(files, output_dir, progress)
+        if category == "markdown" and mode == "to_pdf":
+            return markdown_to_pdf(files, output_dir, options, progress)
     except (KeyError, TypeError, ValueError) as exc:
         raise ConversionError("轉換設定不完整或數值格式不正確。") from exc
 

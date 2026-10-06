@@ -34,6 +34,7 @@ CATEGORY_EXTENSIONS = {
     "video": {".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v", ".mpeg", ".mpg"},
     "audio": {".mp3", ".wav", ".m4a", ".aac", ".ogg", ".flac", ".opus"},
     "pdf": {".pdf"},
+    "markdown": {".md", ".markdown", ".mdown", ".mkd"},
 }
 
 VALID_MODES = {
@@ -41,6 +42,7 @@ VALID_MODES = {
     "video": {"compress", "split", "extract_frames", "extract_audio"},
     "audio": {"volume"},
     "pdf": {"compress", "merge", "to_images"},
+    "markdown": {"to_pdf"},
 }
 
 
@@ -209,6 +211,36 @@ def _validate_options(category: str, mode: str, options: dict) -> dict:
         return {"frame_mode": frame_mode}
     if category == "audio" and mode == "volume":
         return {"db": _number(options.get("db"), "音量", -30, 30)}
+    if category == "markdown" and mode == "to_pdf":
+        orientation = options.get("orientation", "portrait")
+        if orientation not in {"portrait", "landscape"}:
+            raise ConversionError("頁面方向不正確。")
+        try:
+            columns = int(options.get("columns", 1))
+        except (TypeError, ValueError) as exc:
+            raise ConversionError("欄數不正確。") from exc
+        allowed_columns = {1, 2} if orientation == "portrait" else {1, 2, 3}
+        if columns not in allowed_columns:
+            raise ConversionError("此頁面方向不支援選擇的欄數。")
+        page_number = options.get("page_number", "none")
+        page_number_positions = {
+            "none",
+            "bottom_center",
+            "bottom_left",
+            "bottom_right",
+            "top_center",
+            "top_left",
+            "top_right",
+        }
+        if page_number not in page_number_positions:
+            raise ConversionError("頁碼位置不正確。")
+        return {
+            "orientation": orientation,
+            "columns": columns,
+            "margin_mm": _number(options.get("margin_mm"), "頁面邊界", 5, 50),
+            "page_number": page_number,
+            "font_pt": _number(options.get("font_pt", 10), "文字大小", 6, 16),
+        }
     return {}
 
 

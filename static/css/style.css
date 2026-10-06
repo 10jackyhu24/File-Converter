@@ -683,6 +683,101 @@ html[data-theme="dark"] .theme-icon-moon { display: none; }
 
 .option-list { display: flex; flex-direction: column; gap: 10px; }
 
+.markdown-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.markdown-setting-card {
+  min-width: 0;
+  padding: 17px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: linear-gradient(145deg, #fff, #f9fbfb);
+}
+
+.markdown-setting-card.page-number-setting,
+.markdown-setting-card.markdown-preset-card,
+.markdown-setting-card.font-setting { grid-column: 1 / -1; }
+
+.markdown-setting-card h3 {
+  margin: 0 0 13px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.markdown-setting-card h3 span {
+  width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--brand);
+  background: var(--brand-pale);
+  font-size: 9px;
+  letter-spacing: .3px;
+}
+
+.layout-choice-row { display: grid; gap: 8px; }
+.orientation-choices { grid-template-columns: repeat(2, 1fr); }
+.preset-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.column-choices, .margin-choices { grid-template-columns: repeat(3, 1fr); }
+.page-number-choices { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.font-choices { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+.layout-choice {
+  min-height: 48px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  color: var(--ink-soft);
+  background: var(--surface);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: border-color .18s, color .18s, background .18s, box-shadow .18s, transform .18s;
+}
+
+.layout-choice:hover { border-color: #9bbfbe; transform: translateY(-1px); }
+.layout-choice strong { display: block; color: inherit; font-size: 12px; line-height: 1.3; }
+.layout-choice small { display: block; margin-top: 4px; color: #8b9a9d; font-size: 9px; }
+
+.layout-choice.active {
+  border-color: var(--brand);
+  color: var(--brand-dark);
+  background: #eef8f7;
+  box-shadow: 0 0 0 3px rgba(14, 113, 128, .06);
+}
+
+.markdown-custom-margin {
+  width: min(210px, 100%);
+  height: 42px;
+  margin-top: 10px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--brand);
+  border-radius: 11px;
+  background: var(--surface);
+}
+
+.markdown-custom-margin input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  color: var(--ink);
+  background: transparent;
+  font: inherit;
+  font-weight: 750;
+}
+
+.markdown-custom-margin span { color: var(--ink-soft); font-size: 11px; font-weight: 750; }
+
 .option-row {
   min-height: 66px;
   padding: 11px 14px 11px 17px;
@@ -967,6 +1062,13 @@ html[data-theme="dark"] .theme-icon-moon { display: none; }
   .files-section, .options-section { padding: 20px 16px; border-radius: 18px; }
   .file-card { width: 148px; min-width: 148px; }
   .option-row { align-items: flex-start; flex-wrap: wrap; }
+  .markdown-options { grid-template-columns: 1fr; }
+  .markdown-setting-card.page-number-setting,
+  .markdown-setting-card.markdown-preset-card,
+  .markdown-setting-card.font-setting { grid-column: auto; }
+  .margin-choices { grid-template-columns: 1fr; }
+  .page-number-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .preset-choices, .font-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .custom-field { width: 100%; padding-left: 33px; }
   .custom-field input { flex: 1; text-align: left; }
   .convert-action-row { align-items: stretch; flex-direction: column; gap: 13px; }
@@ -1028,6 +1130,10 @@ html[data-theme="dark"] .more-button { color: var(--ink); background: rgba(22, 3
 html[data-theme="dark"] .file-menu { background: #19272b; box-shadow: 0 12px 30px rgba(0, 0, 0, .32); }
 html[data-theme="dark"] .file-menu button:hover { background: #382729; }
 html[data-theme="dark"] .option-row.selected { border-color: var(--brand); background: #142b2f; }
+html[data-theme="dark"] .markdown-setting-card { background: linear-gradient(145deg, #17262a, #132125); }
+html[data-theme="dark"] .layout-choice { background: #111e21; }
+html[data-theme="dark"] .layout-choice.active { color: #8bd7de; background: #142b2f; }
+html[data-theme="dark"] .markdown-custom-margin { background: #101c1f; }
 html[data-theme="dark"] .custom-field input { color: var(--ink); background: #101c1f; }
 html[data-theme="dark"] .single-option { border-color: #345c61; background: #142b2f; }
 html[data-theme="dark"] .toast { border-color: #694143; background: #2d2224; color: #ffaaa6; }

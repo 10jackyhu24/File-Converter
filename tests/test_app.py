@@ -8,9 +8,11 @@ import unittest
 import zipfile
 from pathlib import Path
 
+import fitz
 from PIL import Image
 
 import app as app_module
+from markdown_converter import _render_markdown_html
 
 
 class FileConverterSmokeTests(unittest.TestCase):
@@ -28,6 +30,25 @@ class FileConverterSmokeTests(unittest.TestCase):
         cls.pdf_bytes = cls.make_pdf("#e27752")
         cls.pdf_bytes_2 = cls.make_pdf("#1d7b83")
         cls.large_pdf_bytes = cls.make_large_pdf()
+        cls.markdown_bytes = (
+            "# 多語 Markdown Test\n\n"
+            "中文內容、English text、日本語の文章。\n\n"
+            "| Language | Greeting |\n"
+            "| --- | --- |\n"
+            "| English | Hello |\n"
+            "| 日本語 | こんにちは |\n\n"
+            "```python\n"
+            "def greet(name):\n"
+            "    return f\"Hello, {name}\"\n"
+            "```\n\n"
+            "```cpp\n"
+            "#include <iostream>\n"
+            + "".join(f"int value{i} = {i};\n" for i in range(1, 17))
+            + "```\n\n"
+            + "The probability is $P_i$ and literal `$P_i$` stays code.\n\n"
+            + "$$ E(s)=\\sum P_i\\left(C_i+E(next_i)\\right) $$\n\n"
+            + "$$ E(s)=\\frac{A}{1-p} $$\n"
+        ).encode("utf-8")
 
         cls.media_dir = cls.root / "media"
         cls.media_dir.mkdir()
@@ -144,6 +165,70 @@ class FileConverterSmokeTests(unittest.TestCase):
         compressed = self.convert(upload, "compress", {"target_mb": 0.1})
         self.assertTrue(compressed["_download_data"].startswith(b"%PDF"))
         self.assertLess(len(compressed["_download_data"]), len(self.large_pdf_bytes))
+
+    def test_markdown_to_pdf_layout_tables_and_code(self):
+        source_text = self.markdown_bytes.decode("utf-8")
+        html = _render_markdown_html(
+            source_text,
+            "multilingual",
+            {"orientation": "landscape", "columns": 3, "margin_mm": 10, "font_pt": 8.5},
+        )
+        self.assertIn("<table>", html)
+        self.assertIn('class="code-line"', html)
+        self.assertIn('class="code-text"', html)
+        self.assertNotIn("codehilitetable", html)
+        self.assertIn("column-count: 3", html)
+        self.assertIn("font-size: 8.5pt", html)
+        self.assertIn("&lt;iostream&gt;", html)
+        self.assertNotIn("&amp;lt;iostream", html)
+        self.assertIn('<span class="code-number">10</span>', html)
+        self.assertIn('<div class="code-line"><span class="code-number">10</span><span class="code-text">', html)
+        self.assertIn('<span class="math-inline"><math', html)
+        self.assertIn('<div class="math-display"><math', html)
+        self.assertNotIn('<p><div class="math-display">', html)
+        self.assertIn("<mfrac>", html)
+        self.assertIn("<msub>", html)
+        self.assertIn("<code>$P_i$</code>", html)
+        self.assertNotIn("<script", _render_markdown_html("<script>alert(1)</script>", "unsafe", {"orientation": "portrait", "columns": 1, "margin_mm": 20}))
+
+        upload = self.upload("markdown", [(self.markdown_bytes, "multilingual.md")])
+        converted = self.convert(
+            upload,
+            "to_pdf",
+            {
+                "orientation": "landscape",
+                "columns": 3,
+                "margin_mm": 10,
+                "page_number": "bottom_right",
+                "font_pt": 8.5,
+            },
+        )
+        self.assertTrue(converted["_download_data"].startswith(b"%PDF"))
+        document = fitz.open(stream=converted["_download_data"], filetype="pdf")
+        try:
+            self.assertEqual(document.page_count, 1)
+            self.assertGreater(document[0].rect.width, document[0].rect.height)
+            text = "\n".join(page.get_text() for page in document)
+            self.assertIn("Markdown Test", text)
+            self.assertIn("English", text)
+            self.assertIn("Language", text)
+            self.assertIn("def greet", text)
+            self.assertIn("<iostream>", text)
+            self.assertIn("10", text)
+            self.assertNotIn("\\frac", text)
+            self.assertNotIn("\\sum", text)
+            self.assertIn("∑", text)
+            spans = [
+                span["text"]
+                for block in document[0].get_text("dict")["blocks"]
+                if "lines" in block
+                for line in block["lines"]
+                for span in line["spans"]
+            ]
+            self.assertIn("10", spans)
+            self.assertIn("1", text)
+        finally:
+            document.close()
 
     def test_audio_volume(self):
         upload = self.upload("audio", [(self.audio_path.read_bytes(), "tone.wav")])

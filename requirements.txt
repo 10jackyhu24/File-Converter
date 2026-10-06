@@ -2,3 +2,6 @@ Flask==3.1.2
 Pillow==11.3.0
 pypdf==6.1.1
 PyMuPDF==1.26.4
+Markdown==3.10.3
+Pygments==2.19.2
+latex2mathml==3.81.1

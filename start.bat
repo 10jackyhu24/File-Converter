@@ -8,7 +8,7 @@ if not exist ".venv\Scripts\python.exe" (
 )
 
 call ".venv\Scripts\activate.bat"
-python -c "import flask, PIL, pypdf, fitz" >nul 2>&1
+python -c "import flask, PIL, pypdf, fitz, markdown, pygments, latex2mathml" >nul 2>&1
 if errorlevel 1 (
   echo [File Converter] Installing dependencies...
   python -m pip install -r requirements.txt
