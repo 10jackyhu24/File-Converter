@@ -1,0 +1,4 @@
+{$FILE_CONVERTER_SITE_ADDRESSES:localhost, 127.0.0.1} {
+	tls internal
+	reverse_proxy 127.0.0.1:5000
+}
