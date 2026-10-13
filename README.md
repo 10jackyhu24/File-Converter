@@ -10,6 +10,8 @@
 
 Caddy 使用本機憑證機構簽發 HTTPS 憑證。若瀏覽器顯示憑證不受信任，請以系統管理員身分執行 `caddy trust`，再重新開啟瀏覽器。首次執行時，Windows 防火牆可能詢問是否允許 Caddy 連線。
 
+若要從其他電腦使用公開信任的 HTTPS，請在架站電腦使用 `Caddyfile` 中的 `file-converter.ddns.net` 站台設定，並以 <https://file-converter.ddns.net/> 連線。No-IP 的 A 記錄須指向架站電腦的公網 IP，80 與 443 埠須可由外部連入；Caddy 會自動申請及續期該網域的公開憑證。`data/Caddyfile.generated` 是舊的產生檔，`run_https.py` 實際讀取的是專題根目錄的 `Caddyfile`。
+
 若執行 `caddy version` 時出現「blocked by your organization's Device Guard policy」，代表 Windows 應用程式控制政策阻止 Caddy 執行；WinGet 安裝成功也不代表執行已獲准。請將錯誤訊息與事件檢視器 `Microsoft-Windows-CodeIntegrity/Operational` 中對應的 3077 事件提供給裝置管理員，請其依組織政策核准 Caddy。在獲准前，`start.bat` 無法啟動 HTTPS 服務。
 
 也可以手動啟動：

@@ -2,3 +2,7 @@
 	tls internal
 	reverse_proxy 127.0.0.1:5000
 }
+
+file-converter.ddns.net {
+	reverse_proxy 127.0.0.1:5000
+}
