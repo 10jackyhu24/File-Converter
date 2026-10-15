@@ -172,40 +172,60 @@ def _extract_math(source: str) -> tuple[str, dict[str, str]]:
     lines = source.splitlines(keepends=True)
     fence_char = ""
     fence_length = 0
+    fence_quote_depth = 0
+
+    def quote_parts(line: str) -> tuple[str, str]:
+        quote = re.match(r"^(?: {0,3}> ?)+", line)
+        return (quote.group(), line[quote.end():]) if quote else ("", line)
+
     index = 0
     while index < len(lines):
         line = lines[index]
-        fence = re.match(r"^ {0,3}(`{3,}|~{3,})", line)
+        quote_prefix, content = quote_parts(line)
+        quote_depth = quote_prefix.count(">")
+        if fence_char and quote_depth < fence_quote_depth:
+            fence_char = ""
+        fence_content = content if fence_quote_depth else line
         if fence_char:
             output.append(line)
-            if re.match(rf"^ {{0,3}}{re.escape(fence_char)}{{{fence_length},}}\s*$", line):
+            if re.match(rf"^ {{0,3}}{re.escape(fence_char)}{{{fence_length},}}\s*$", fence_content):
                 fence_char = ""
             index += 1
             continue
+        fence = re.match(r"^ {0,3}(`{3,}|~{3,})", content)
         if fence:
             fence_char = fence.group(1)[0]
             fence_length = len(fence.group(1))
+            fence_quote_depth = quote_depth
             output.append(line)
             index += 1
             continue
-        if line.startswith(("    ", "\t")):
+        if content.startswith(("    ", "\t")):
             output.append(line)
             index += 1
             continue
 
-        stripped = line.strip()
+        stripped = content.strip()
         delimiter = "$$" if stripped.startswith("$$") else "\\[" if stripped.startswith("\\[") else ""
         if delimiter:
             end_delimiter = "$$" if delimiter == "$$" else "\\]"
             pieces = [stripped[len(delimiter):]]
             consumed = 1
             while end_delimiter not in pieces[-1] and index + consumed < len(lines):
-                pieces.append(lines[index + consumed].strip())
+                next_prefix, next_content = quote_parts(lines[index + consumed])
+                if next_prefix.count(">") != quote_depth:
+                    break
+                pieces.append(next_content.strip())
                 consumed += 1
             joined = "\n".join(pieces)
             close = joined.find(end_delimiter)
             if close >= 0 and not joined[close + len(end_delimiter):].strip():
-                output.append("\n\n" + stash(joined[:close], True) + "\n\n")
+                # Keep blank separators inside the same quote, so the formula
+                # becomes its own block without moving out of its container.
+                output.append(
+                    quote_prefix + "\n" + quote_prefix + stash(joined[:close], True)
+                    + "\n" + quote_prefix + "\n"
+                )
                 index += consumed
                 continue
         output.append(inline_math(line))
@@ -251,15 +271,33 @@ def _read_markdown(path: Path) -> str:
 def _render_markdown_html(source_text: str, title: str, options: dict) -> str:
     try:
         import markdown
+        from markdown.blockprocessors import ParagraphProcessor
         from pygments.formatters import HtmlFormatter
     except ImportError as exc:
         raise MarkdownRenderError(
             "缺少 Markdown 或 Pygments，請執行 pip install -r requirements.txt。"
         ) from exc
 
+    class QuotedParagraphProcessor(ParagraphProcessor):
+        """Allow a list to follow a quoted paragraph without a blank line."""
+
+        LIST_START = re.compile(r"\n(?= {0,3}(?:[*+-]|\d+\.) +\S)")
+
+        def run(self, parent, blocks):
+            if parent.tag == "blockquote":
+                block = blocks[0]
+                # Inline code can span lines; list-like text inside it stays code.
+                code_pattern = self.parser.md.inlinePatterns["backtick"].getCompiledRegExp()
+                text = code_pattern.sub(lambda match: " " * len(match.group()), block)
+                match = self.LIST_START.search(text)
+                if match and not re.match(r"^ {0,3}(?:`{3,}|~{3,})", block):
+                    blocks.pop(0)
+                    self.parser.parseBlocks(parent, [block[:match.start()], block[match.end():]])
+                    return
+            super().run(parent, blocks)
+
     markdown_source, math_markers = _extract_math(source_text)
-    body = markdown.markdown(
-        markdown_source,
+    renderer = markdown.Markdown(
         extensions=["tables", "fenced_code", "codehilite", "sane_lists"],
         extension_configs={
             "codehilite": {
@@ -272,10 +310,12 @@ def _render_markdown_html(source_text: str, title: str, options: dict) -> str:
         },
         output_format="html5",
     )
+    renderer.parser.blockprocessors.register(QuotedParagraphProcessor(renderer.parser), "paragraph", 10)
+    body = renderer.convert(markdown_source)
     body = _align_code_lines(_sanitize_html(body))
     for marker, mathml in math_markers.items():
         if mathml.startswith('<div class="math-display">'):
-            body = body.replace(f"<p>{marker}</p>", mathml)
+            body = re.sub(rf"<p>\s*{re.escape(marker)}\s*</p>", lambda _: mathml, body)
         body = body.replace(marker, mathml)
 
     orientation = options["orientation"]
