@@ -485,22 +485,27 @@ def _add_page_numbers(source: Path, destination: Path, position: str, margin_mm:
         "center": fitz.TEXT_ALIGN_CENTER,
         "right": fitz.TEXT_ALIGN_RIGHT,
     }
+    # Move page numbers 2 mm inward to reduce clipping when printed.
+    inward_shift = 2 * 72 / 25.4
     document = fitz.open(source)
     try:
         for number, page in enumerate(document, start=1):
             page_rect = page.rect
             margin_points = max(14.0, margin_mm * 72 / 25.4)
-            side_inset = min(margin_points * 0.65, 36)
+            side_inset = min(margin_points * 0.65, 36) + inward_shift
             if vertical == "top":
                 box = fitz.Rect(
-                    side_inset, 3, page_rect.width - side_inset, max(15, margin_points - 3)
+                    side_inset,
+                    3 + inward_shift,
+                    page_rect.width - side_inset,
+                    max(15, margin_points - 3) + inward_shift,
                 )
             else:
                 box = fitz.Rect(
                     side_inset,
-                    page_rect.height - max(15, margin_points - 3),
+                    page_rect.height - max(15, margin_points - 3) - inward_shift,
                     page_rect.width - side_inset,
-                    page_rect.height - 3,
+                    page_rect.height - 3 - inward_shift,
                 )
             page.insert_textbox(
                 box,
