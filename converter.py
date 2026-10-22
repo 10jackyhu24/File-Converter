@@ -9,8 +9,22 @@ from io import BytesIO
 from pathlib import Path
 from typing import Callable, Iterable
 
-from PIL import Image, ImageFilter, ImageOps
+from PIL import GifImagePlugin, Image, ImageFilter, ImageOps, ImageSequence
+from pillow_heif import register_heif_opener
 from pypdf import PdfReader, PdfWriter
+
+
+register_heif_opener(thumbnails=False)
+
+IMAGE_OUTPUT_FORMATS = {
+    "png": ("PNG", ".png"),
+    "jpeg": ("JPEG", ".jpg"),
+    "gif": ("GIF", ".gif"),
+    "heic": ("HEIF", ".heic"),
+    "webp": ("WEBP", ".webp"),
+    "bmp": ("BMP", ".bmp"),
+    "tiff": ("TIFF", ".tiff"),
+}
 
 
 class ConversionError(RuntimeError):
@@ -185,6 +199,200 @@ def _jpeg_bytes(image: Image.Image, quality: int) -> bytes:
     buffer = BytesIO()
     image.save(buffer, "JPEG", quality=quality, optimize=True, progressive=True)
     return buffer.getvalue()
+
+
+def image_preview(source: Path) -> BytesIO:
+    with _open_flat_image(source) as image:
+        image.thumbnail((480, 480), Image.Resampling.LANCZOS)
+        return BytesIO(_jpeg_bytes(image, 85))
+
+
+def detect_image_format(source: Path) -> str:
+    try:
+        with Image.open(source) as image:
+            image_format = image.format or ""
+    except (OSError, ValueError) as exc:
+        raise ConversionError("無法辨識圖片格式，請確認檔案未損壞。") from exc
+    return {"JPEG": "jpeg", "MPO": "jpeg", "HEIF": "heic", "TIFF": "tiff"}.get(
+        image_format, image_format.lower()
+    )
+
+
+def validate_image_format_change(files: list[tuple[Path, str]], output_format: str) -> None:
+    # Combining several inputs into a new animation also accepts existing GIFs.
+    if output_format == "gif" and len(files) > 1:
+        return
+    for source, original_name in files:
+        if detect_image_format(source) == output_format:
+            label = output_format.upper()
+            raise ConversionError(f"圖片「{original_name}」已是 {label} 格式，請選擇其他輸出格式。")
+
+
+def _save_format_frame(image: Image.Image, destination: Path, output_format: str, **save_options) -> None:
+    if output_format == "jpeg":
+        destination.write_bytes(_jpeg_bytes(image, 95))
+    elif output_format == "bmp":
+        with Image.new("RGB", image.size, "white") as background:
+            background.paste(image, mask=image.getchannel("A"))
+            background.save(destination, "BMP")
+    else:
+        if output_format in {"heic", "webp"}:
+            save_options["quality"] = 90
+        image.save(destination, IMAGE_OUTPUT_FORMATS[output_format][0], **save_options)
+
+
+def _convert_image_format(source: Path, destination: Path, output_format: str) -> list[Path]:
+    frames: list[Image.Image] = []
+    durations: list[int] = []
+    generated: list[Path] = []
+    try:
+        with Image.open(source) as image:
+            animated = getattr(image, "is_animated", False)
+            split_frames = animated and output_format not in {"gif", "webp"}
+            loop = image.info.get("loop")
+            for index, frame in enumerate(ImageSequence.Iterator(image), start=1):
+                with ImageOps.exif_transpose(frame) as oriented:
+                    rgba = oriented.convert("RGBA")
+                if split_frames:
+                    frame_path = _unique_path(
+                        destination.parent, f"{destination.stem}_frame_{index:04d}{destination.suffix}"
+                    )
+                    with rgba:
+                        _save_format_frame(rgba, frame_path, output_format)
+                    generated.append(frame_path)
+                else:
+                    frames.append(rgba)
+                    durations.append(frame.info.get("duration", 100))
+                if not animated:
+                    break
+
+            if split_frames:
+                return generated
+
+            save_options = {}
+            if animated:
+                save_options.update(save_all=True, append_images=frames[1:], duration=durations)
+                if loop is not None:
+                    save_options["loop"] = loop
+                elif output_format == "webp":
+                    save_options["loop"] = 1
+                if output_format == "gif":
+                    save_options["disposal"] = 2
+            _save_format_frame(frames[0], destination, output_format, **save_options)
+            return [destination]
+    finally:
+        for frame in frames:
+            frame.close()
+
+
+def _gif_palette(image: Image.Image) -> Image.Image:
+    with image.convert("RGB") as rgb:
+        indexed = rgb.quantize(colors=255)
+    palette = indexed.getpalette() or []
+    palette.extend([0] * (768 - len(palette)))
+    palette[765:768] = [0, 0, 0]
+    indexed.putpalette(palette)
+    with image.getchannel("A") as alpha:
+        with alpha.point(lambda value: 255 if value < 128 else 0) as transparent:
+            indexed.paste(255, mask=transparent)
+    return indexed
+
+
+def images_to_gif(
+    files: list[tuple[Path, str]],
+    output_dir: Path,
+    progress: ProgressCallback | None = None,
+    fps: int | None = None,
+) -> Path:
+    width = height = 0
+    frame_counts = []
+    loop = 0
+    for index, (source, original_name) in enumerate(files):
+        with Image.open(source) as image:
+            if len(files) == 1:
+                loop = image.info.get("loop", 0)
+            count = 0
+            for frame in ImageSequence.Iterator(image):
+                frame_width, frame_height = frame.size
+                if frame.getexif().get(274) in {5, 6, 7, 8}:
+                    frame_width, frame_height = frame_height, frame_width
+                width = max(width, frame_width)
+                height = max(height, frame_height)
+                count += 1
+            frame_counts.append(count)
+        _report(progress, (index + 1) / len(files) * 8, original_name)
+
+    destination = output_dir / (f"{_safe_stem(files[0][1])}.gif" if len(files) == 1 else "animated_images.gif")
+    first_frame = True
+    frame_number = 0
+    with destination.open("wb") as output:
+        for file_index, (source, original_name) in enumerate(files):
+            with Image.open(source) as image:
+                for frame_index, frame in enumerate(ImageSequence.Iterator(image)):
+                    frame.load()
+                    if fps is None:
+                        duration = frame.info.get("duration") or 100
+                    else:
+                        # GIF delays use 10 ms units. Round cumulative boundaries
+                        # so rates such as 24 or 30 FPS keep the requested average.
+                        start_tick = round(frame_number * 100 / fps)
+                        end_tick = round((frame_number + 1) * 100 / fps)
+                        duration = (end_tick - start_tick) * 10
+                    frame_number += 1
+                    with ImageOps.exif_transpose(frame) as oriented:
+                        with oriented.convert("RGBA") as rgba:
+                            with Image.new("RGBA", (width, height), (0, 0, 0, 0)) as canvas:
+                                canvas.paste(rgba, ((width - rgba.width) // 2, (height - rgba.height) // 2))
+                                with _gif_palette(canvas) as indexed:
+                                    # Write one frame at a time instead of retaining every
+                                    # decoded image in memory. Identical frames stay separate.
+                                    if first_frame:
+                                        header, _ = GifImagePlugin.getheader(indexed, info={
+                                            "loop": loop, "background": 255, "transparency": 255,
+                                            "optimize": False,
+                                        })
+                                        output.writelines(header)
+                                        first_frame = False
+                                    output.writelines(GifImagePlugin.getdata(
+                                        indexed, duration=duration, disposal=2,
+                                        transparency=255, include_color_table=True,
+                                    ))
+                    fraction = (frame_index + 1) / frame_counts[file_index]
+                    _report(progress, 8 + (file_index + fraction) / len(files) * 86, original_name)
+        output.write(b";")
+    _report(progress, 98)
+    return destination
+
+
+def image_convert_format(
+    files: list[tuple[Path, str]],
+    output_dir: Path,
+    output_format: str,
+    progress: ProgressCallback | None = None,
+    fps: int | None = None,
+) -> Path:
+    if output_format not in IMAGE_OUTPUT_FORMATS:
+        raise ConversionError("不支援的圖片輸出格式。")
+    validate_image_format_change(files, output_format)
+    if output_format == "gif":
+        try:
+            return images_to_gif(files, output_dir, progress, fps=fps)
+        except OSError as exc:
+            raise ConversionError("無法建立 GIF，請確認上傳圖片未損壞。") from exc
+    _, extension = IMAGE_OUTPUT_FORMATS[output_format]
+    generated: list[tuple[Path, str]] = []
+    for index, (source, original_name) in enumerate(files):
+        _file_progress(progress, index, len(files), original_name, 5)
+        destination = _unique_path(output_dir, f"{_safe_stem(original_name)}{extension}")
+        try:
+            paths = _convert_image_format(source, destination, output_format)
+        except OSError as exc:
+            raise ConversionError(f"無法轉換圖片「{original_name}」，請確認檔案未損壞且格式受支援。") from exc
+        generated.extend((path, path.name) for path in paths)
+        _file_progress(progress, index, len(files), original_name, 100)
+    result = generated[0][0] if len(generated) == 1 else _zip_paths(output_dir / "converted_images.zip", generated)
+    _report(progress, 98)
+    return result
 
 
 def _compress_image(source: Path, destination: Path, target_bytes: int) -> None:
@@ -738,6 +946,8 @@ def convert(
     try:
         if category == "image" and mode == "compress":
             return image_compress(files, output_dir, float(options["target_mb"]), progress)
+        if category == "image" and mode == "convert_format":
+            return image_convert_format(files, output_dir, options["format"], progress, fps=options.get("fps"))
         if category == "image" and mode == "to_pdf":
             return images_to_pdf(files, output_dir, progress)
         if category == "image" and mode == "noise":

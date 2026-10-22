@@ -150,7 +150,7 @@
         </div>
 
         <div id="uploadView" class="view upload-view">
-          <input type="file" id="fileInput" multiple hidden>
+          <input type="file" id="fileInput" data-max-upload-bytes="{{ config.MAX_CONTENT_LENGTH }}" multiple hidden>
           <button type="button" class="dropzone" id="dropzone">
             <span class="drop-illustration">
               <span class="file-sheet sheet-back"></span>
@@ -159,7 +159,7 @@
             <strong data-i18n="dropTitle">拖曳檔案到這裡</strong>
             <span class="drop-or" data-i18n="or">或</span>
             <span class="browse-pill" data-i18n="browse">選擇檔案</span>
-            <small id="fileHint">支援 JPG、PNG、WEBP、BMP、TIFF、GIF</small>
+            <small id="fileHint">支援 JPG、PNG、GIF、HEIC／HEIF、WEBP、BMP、TIFF</small>
           </button>
 
           <div class="pending-files hidden" id="pendingFiles">
@@ -183,10 +183,23 @@
               <div>
                 <span class="section-kicker" data-i18n="uploadedFiles">已上傳的檔案</span>
                 <h2 data-i18n="dragSort">拖曳即可調整順序</h2>
+                <p class="file-total-size" id="fileTotalSize"></p>
               </div>
               <span class="file-count" id="fileCount">0</span>
             </div>
-            <div class="file-cards" id="fileCards"></div>
+            <div class="file-sort-toolbar">
+              <label for="fileSort" data-i18n="sortFiles">排列方式</label>
+              <select id="fileSort">
+                <option value="upload" data-i18n="sortUploadOrder">依上傳順序</option>
+                <option value="manual" data-i18n="sortManual">自訂順序</option>
+                <option value="name_asc" data-i18n="sortNameAsc">以檔案名稱排序（小到大）</option>
+                <option value="name_desc" data-i18n="sortNameDesc">以檔案名稱排序（大到小）</option>
+                <option value="size_asc" data-i18n="sortSizeAsc">以檔案大小排序（小到大）</option>
+                <option value="size_desc" data-i18n="sortSizeDesc">以檔案大小排序（大到小）</option>
+              </select>
+              <button type="button" class="file-sort-button" id="reverseOrderButton" data-i18n="reverseOrder">反轉目前順序</button>
+            </div>
+            <div class="file-cards" id="fileCards" tabindex="0" role="region" aria-label="Uploaded files"></div>
           </section>
 
           <section class="options-section">

@@ -13,7 +13,10 @@ from flask import Flask, jsonify, render_template, request, send_file
 from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.utils import secure_filename
 
-from converter import ConversionError, convert, reset_output_dir
+from converter import (
+    IMAGE_OUTPUT_FORMATS, ConversionError, convert, detect_image_format, image_preview,
+    reset_output_dir, validate_image_format_change,
+)
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -23,6 +26,7 @@ JOBS_DIR.mkdir(parents=True, exist_ok=True)
 app = Flask(__name__)
 app.config.update(
     MAX_CONTENT_LENGTH=2 * 1024 * 1024 * 1024,
+    MAX_FORM_PARTS=None,
     JSON_AS_ASCII=False,
 )
 
@@ -30,7 +34,7 @@ conversion_tasks: dict[str, dict] = {}
 conversion_tasks_lock = threading.Lock()
 
 CATEGORY_EXTENSIONS = {
-    "image": {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tif", ".tiff", ".gif"},
+    "image": {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tif", ".tiff", ".gif", ".heic", ".heif", ".hif"},
     "video": {".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v", ".mpeg", ".mpg"},
     "audio": {".mp3", ".wav", ".m4a", ".aac", ".ogg", ".flac", ".opus"},
     "pdf": {".pdf"},
@@ -38,7 +42,7 @@ CATEGORY_EXTENSIONS = {
 }
 
 VALID_MODES = {
-    "image": {"compress", "to_pdf", "noise", "blur"},
+    "image": {"compress", "convert_format", "to_pdf", "noise", "blur"},
     "video": {"compress", "split", "extract_frames", "extract_audio"},
     "audio": {"volume"},
     "pdf": {"compress", "merge", "to_images"},
@@ -173,6 +177,7 @@ def _public_file(file_item: dict) -> dict:
         "name": file_item["original_name"],
         "size": file_item["size"],
         "mime": file_item["mime"],
+        "format": file_item.get("format"),
     }
 
 
@@ -187,6 +192,23 @@ def _number(value, label: str, minimum: float, maximum: float) -> float:
 
 
 def _validate_options(category: str, mode: str, options: dict) -> dict:
+    if category == "image" and mode == "convert_format":
+        output_format = options.get("format", "png")
+        if not isinstance(output_format, str):
+            raise ConversionError("不支援的圖片輸出格式。")
+        output_format = output_format.lower()
+        output_format = {"jpg": "jpeg", "heif": "heic", "tif": "tiff"}.get(output_format, output_format)
+        if output_format not in IMAGE_OUTPUT_FORMATS:
+            raise ConversionError("不支援的圖片輸出格式。")
+        validated = {"format": output_format}
+        if output_format == "gif" and "fps" in options:
+            if isinstance(options["fps"], bool):
+                raise ConversionError("GIF FPS 必須是 1 到 60 的整數。")
+            fps = _number(options["fps"], "GIF FPS", 1, 60)
+            if not fps.is_integer():
+                raise ConversionError("GIF FPS 必須是 1 到 60 的整數。")
+            validated["fps"] = int(fps)
+        return validated
     if category in {"image", "video", "pdf"} and mode == "compress":
         return {"target_mb": _number(options.get("target_mb"), "目標大小", 0.1, 2048)}
     if category == "image" and mode == "noise":
@@ -265,9 +287,6 @@ def upload():
     incoming = [item for item in request.files.getlist("files") if item and item.filename]
     if not incoming:
         return _json_error("請至少選擇一個檔案。")
-    if len(incoming) > 50:
-        return _json_error("一次最多可上傳 50 個檔案。")
-
     invalid = [
         item.filename
         for item in incoming
@@ -299,6 +318,7 @@ def upload():
                     "stored_name": stored_name,
                     "size": destination.stat().st_size,
                     "mime": item.mimetype or mimetypes.guess_type(original_name)[0] or "application/octet-stream",
+                    "format": detect_image_format(destination) if category == "image" else None,
                 }
             )
 
@@ -317,6 +337,27 @@ def upload():
             return _json_error(str(exc))
         app.logger.exception("Upload failed")
         return _json_error("上傳失敗，請稍後再試。", 500)
+
+
+@app.get("/api/jobs/<job_id>/files/<file_id>/preview")
+def preview_image(job_id: str, file_id: str):
+    job_dir = _job_dir(job_id)
+    if not job_dir or not job_dir.is_dir():
+        return _json_error("找不到這次上傳記錄。", 404)
+    metadata = _read_metadata(job_dir)
+    if not metadata or metadata["category"] != "image":
+        return _json_error("找不到圖片。", 404)
+    match = next((item for item in metadata["files"] if item["id"] == file_id), None)
+    if not match:
+        return _json_error("找不到該檔案。", 404)
+    source = job_dir / "uploads" / match["stored_name"]
+    if not source.is_file():
+        return _json_error("找不到圖片。", 404)
+    try:
+        preview = image_preview(source)
+    except (OSError, ValueError):
+        return _json_error("無法預覽這張圖片。")
+    return send_file(preview, mimetype="image/jpeg")
 
 
 @app.delete("/api/jobs/<job_id>/files/<file_id>")
@@ -376,6 +417,12 @@ def convert_files():
     ]
     if any(not path.is_file() for path, _ in files):
         return _json_error("部分上傳檔案已不存在，請重新上傳。", 404)
+
+    if category == "image" and mode == "convert_format":
+        try:
+            validate_image_format_change(files, options["format"])
+        except ConversionError as exc:
+            return _json_error(str(exc))
 
     metadata["result"] = None
     _write_metadata(job_dir, metadata)

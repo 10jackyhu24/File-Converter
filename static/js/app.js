@@ -13,12 +13,26 @@ const translations = {
     allDone: "全部完成", conversionComplete: "轉換完成！", downloadFile: "下載檔案", convertMore: "轉換其他檔案",
     uploadFailed: "上傳失敗，請再試一次。", convertFailed: "轉換失敗，請再試一次。", invalidType: "請選擇符合目前分類的檔案。",
     noFiles: "請先選擇檔案。", minTwoPdf: "連接 PDF 至少需要兩個檔案。", confirmDeleteLast: "已刪除最後一個檔案，請重新上傳。",
-    hint_image: "支援 JPG、PNG、WEBP、BMP、TIFF、GIF",
+    uploadLimitHint: "總大小上限 2 GB，不限制檔案數量", uploadTooLarge: "檔案總大小不可超過 2 GB，請減少選擇的檔案。",
+    hint_image: "支援 JPG、PNG、GIF、HEIC／HEIF、WEBP、BMP、TIFF",
     hint_video: "支援 MP4、MOV、AVI、MKV、WEBM、MPEG",
     hint_audio: "支援 MP3、WAV、M4A、AAC、OGG、FLAC、OPUS",
     hint_pdf: "支援 PDF；連接時可拖曳調整頁面順序",
     hint_markdown: "支援 UTF-8 編碼的 MD、MARKDOWN、MDOWN、MKD",
     m_image_compress: "壓縮檔案大小", m_image_to_pdf: "轉 PDF", m_image_noise: "添加雜訊", m_image_blur: "模糊處理",
+    m_image_convert_format: "圖片格式轉換", title_image_convert_format: "圖片格式轉換",
+    desc_image_convert_format: "將圖片轉為 PNG、JPEG、GIF、HEIC 等格式。GIF 會依排列順序合成一個動畫；動畫轉為靜態格式時逐幀輸出並打包成 ZIP。",
+    oh_image_format: "選擇輸出圖片格式",
+    sameImageFormat: "已上傳的圖片包含此格式，請選擇其他格式",
+    chooseDifferentImageFormat: "請選擇與已上傳圖片不同的輸出格式。",
+    noAvailableImageFormat: "所有格式都已包含，請移除部分圖片或分批轉換",
+    formatPngDetail: "無損壓縮，保留透明背景", formatJpegDetail: "適合照片，透明區域轉為白底",
+    formatGifDetail: "依目前排序合成一個動畫 GIF，可設定每秒影格數", formatHeicDetail: "適合手機照片，檔案較小",
+    gifFpsLabel: "GIF 每秒影格數", gifFpsHint: "每秒影格數，預設 10 FPS", gifFpsRange: "GIF FPS 請輸入 1–60 的整數。",
+    sortFiles: "排列方式", sortUploadOrder: "依上傳順序", sortManual: "自訂順序",
+    sortNameAsc: "以檔案名稱排序（小到大）", sortNameDesc: "以檔案名稱排序（大到小）",
+    sortSizeAsc: "以檔案大小排序（小到大）", sortSizeDesc: "以檔案大小排序（大到小）", reverseOrder: "反轉目前順序",
+    formatWebpDetail: "體積較小，保留透明背景與動畫", formatBmpDetail: "未壓縮點陣圖，透明區域轉為白底", formatTiffDetail: "適合列印與影像編輯",
     m_video_compress: "壓縮檔案大小", m_video_split: "分割影片", m_video_extract_frames: "提取圖片", m_video_extract_audio: "提取音檔",
     m_audio_volume: "音量調整", m_pdf_compress: "壓縮檔案大小", m_pdf_merge: "連接 PDF", m_pdf_to_images: "轉圖片", m_markdown_to_pdf: "轉 PDF",
     title_image_compress: "壓縮圖片", title_image_to_pdf: "圖片轉 PDF", title_image_noise: "為圖片添加雜訊", title_image_blur: "模糊圖片",
@@ -63,12 +77,26 @@ const translations = {
     allDone: "ALL DONE", conversionComplete: "Conversion complete!", downloadFile: "Download file", convertMore: "Convert more files",
     uploadFailed: "Upload failed. Please try again.", convertFailed: "Conversion failed. Please try again.", invalidType: "Choose files matching the current category.",
     noFiles: "Choose at least one file first.", minTwoPdf: "Merging PDFs requires at least two files.", confirmDeleteLast: "The last file was removed. Please upload again.",
-    hint_image: "Supports JPG, PNG, WEBP, BMP, TIFF and GIF",
+    uploadLimitHint: "2 GB total limit, no file count limit", uploadTooLarge: "The total file size must not exceed 2 GB. Select fewer files.",
+    hint_image: "Supports JPG, PNG, GIF, HEIC/HEIF, WEBP, BMP and TIFF",
     hint_video: "Supports MP4, MOV, AVI, MKV, WEBM and MPEG",
     hint_audio: "Supports MP3, WAV, M4A, AAC, OGG, FLAC and OPUS",
     hint_pdf: "Supports PDF; drag to set the merge order",
     hint_markdown: "Supports UTF-8 MD, MARKDOWN, MDOWN and MKD files",
     m_image_compress: "Compress size", m_image_to_pdf: "Convert to PDF", m_image_noise: "Add noise", m_image_blur: "Blur",
+    m_image_convert_format: "Convert image format", title_image_convert_format: "Convert image format",
+    desc_image_convert_format: "Convert images to PNG, JPEG, GIF, HEIC and more. GIF combines all images into one animation in the displayed order; static formats export every animation frame in a ZIP.",
+    oh_image_format: "Choose an output image format",
+    sameImageFormat: "An uploaded image already uses this format; choose another",
+    chooseDifferentImageFormat: "Choose an output format different from the uploaded images.",
+    noAvailableImageFormat: "All formats are present; remove some images or convert in separate batches",
+    formatPngDetail: "Lossless compression with transparency", formatJpegDetail: "Ideal for photos; transparent areas become white",
+    formatGifDetail: "Combine images in order into one animated GIF with adjustable frame rate", formatHeicDetail: "Compact format for phone photos",
+    gifFpsLabel: "GIF frames per second", gifFpsHint: "Frames per second; defaults to 10 FPS", gifFpsRange: "Enter a whole number from 1 to 60 for GIF FPS.",
+    sortFiles: "Sort files", sortUploadOrder: "Upload order", sortManual: "Custom order",
+    sortNameAsc: "File name: ascending", sortNameDesc: "File name: descending",
+    sortSizeAsc: "File size: smallest first", sortSizeDesc: "File size: largest first", reverseOrder: "Reverse current order",
+    formatWebpDetail: "Compact files with transparency and animation", formatBmpDetail: "Uncompressed bitmap; transparent areas become white", formatTiffDetail: "Suitable for printing and image editing",
     m_video_compress: "Compress size", m_video_split: "Split video", m_video_extract_frames: "Extract images", m_video_extract_audio: "Extract audio",
     m_audio_volume: "Adjust volume", m_pdf_compress: "Compress size", m_pdf_merge: "Merge PDFs", m_pdf_to_images: "Convert to images", m_markdown_to_pdf: "Convert to PDF",
     title_image_compress: "Compress images", title_image_to_pdf: "Images to PDF", title_image_noise: "Add image noise", title_image_blur: "Blur images",
@@ -113,12 +141,26 @@ const translations = {
     allDone: "完了", conversionComplete: "変換が完了しました！", downloadFile: "ダウンロード", convertMore: "別のファイルを変換",
     uploadFailed: "アップロードに失敗しました。", convertFailed: "変換に失敗しました。", invalidType: "現在のカテゴリに合うファイルを選択してください。",
     noFiles: "先にファイルを選択してください。", minTwoPdf: "PDFの結合には2つ以上のファイルが必要です。", confirmDeleteLast: "最後のファイルを削除しました。再度アップロードしてください。",
-    hint_image: "JPG、PNG、WEBP、BMP、TIFF、GIF に対応",
+    uploadLimitHint: "合計 2 GB まで、ファイル数制限なし", uploadTooLarge: "ファイルの合計サイズは 2 GB までです。選択するファイルを減らしてください。",
+    hint_image: "JPG、PNG、GIF、HEIC／HEIF、WEBP、BMP、TIFF に対応",
     hint_video: "MP4、MOV、AVI、MKV、WEBM、MPEG に対応",
     hint_audio: "MP3、WAV、M4A、AAC、OGG、FLAC、OPUS に対応",
     hint_pdf: "PDF に対応；ドラッグで結合順を変更できます",
     hint_markdown: "UTF-8 の MD、MARKDOWN、MDOWN、MKD に対応",
     m_image_compress: "サイズ圧縮", m_image_to_pdf: "PDFに変換", m_image_noise: "ノイズ追加", m_image_blur: "ぼかし",
+    m_image_convert_format: "画像形式を変換", title_image_convert_format: "画像形式を変換",
+    desc_image_convert_format: "PNG、JPEG、GIF、HEIC などに変換します。GIF は表示順に1つのアニメーションへ結合し、静止画形式では全フレームをZIPにまとめて出力します。",
+    oh_image_format: "出力する画像形式を選択",
+    sameImageFormat: "アップロードした画像にこの形式が含まれています。他の形式を選択してください",
+    chooseDifferentImageFormat: "アップロードした画像と異なる出力形式を選択してください。",
+    noAvailableImageFormat: "すべての形式が含まれています。一部の画像を削除するか、分けて変換してください",
+    formatPngDetail: "可逆圧縮、透明背景を保持", formatJpegDetail: "写真向け。透明部分は白背景に変換",
+    formatGifDetail: "表示順に1つのアニメーションGIFへ結合。フレームレートを設定できます", formatHeicDetail: "スマートフォンの写真向けの軽量形式",
+    gifFpsLabel: "GIFの毎秒フレーム数", gifFpsHint: "毎秒フレーム数。初期値は10 FPS", gifFpsRange: "GIF FPSは1〜60の整数で入力してください。",
+    sortFiles: "並べ替え", sortUploadOrder: "アップロード順", sortManual: "カスタム順",
+    sortNameAsc: "ファイル名：昇順", sortNameDesc: "ファイル名：降順",
+    sortSizeAsc: "ファイルサイズ：小さい順", sortSizeDesc: "ファイルサイズ：大きい順", reverseOrder: "現在の順序を反転",
+    formatWebpDetail: "軽量、透明背景とアニメーションを保持", formatBmpDetail: "非圧縮ビットマップ。透明部分は白背景に変換", formatTiffDetail: "印刷や画像編集向け",
     m_video_compress: "サイズ圧縮", m_video_split: "動画を分割", m_video_extract_frames: "画像を抽出", m_video_extract_audio: "音声を抽出",
     m_audio_volume: "音量調整", m_pdf_compress: "サイズ圧縮", m_pdf_merge: "PDFを結合", m_pdf_to_images: "画像に変換", m_markdown_to_pdf: "PDFに変換",
     title_image_compress: "画像を圧縮", title_image_to_pdf: "画像をPDFに変換", title_image_noise: "画像にノイズを追加", title_image_blur: "画像をぼかす",
@@ -155,11 +197,21 @@ const translations = {
 
 const categoryConfig = {
   image: {
-    accept: ".png,.jpg,.jpeg,.webp,.bmp,.tif,.tiff,.gif",
-    extensions: ["png", "jpg", "jpeg", "webp", "bmp", "tif", "tiff", "gif"],
+    accept: ".png,.jpg,.jpeg,.webp,.bmp,.tif,.tiff,.gif,.heic,.heif,.hif",
+    extensions: ["png", "jpg", "jpeg", "webp", "bmp", "tif", "tiff", "gif", "heic", "heif", "hif"],
     modes: [
       { id: "compress", label: "m_image_compress", title: "title_image_compress", desc: "desc_image_compress", heading: "oh_target", field: "target_mb", defaultValue: 20,
         options: [{ value: 20, label: "preset_discord", detail: "20 MB" }, { value: "custom", label: "customSize", detail: "customValue", input: { unit: "MB", min: .1, max: 2048, step: .1, initial: 10 } }] },
+      { id: "convert_format", label: "m_image_convert_format", title: "title_image_convert_format", desc: "desc_image_convert_format", heading: "oh_image_format", field: "format", defaultValue: "png",
+        options: [
+          { value: "png", label: "PNG", detail: "formatPngDetail" },
+          { value: "jpeg", label: "JPEG", detail: "formatJpegDetail" },
+          { value: "gif", label: "GIF", detail: "formatGifDetail" },
+          { value: "heic", label: "HEIC", detail: "formatHeicDetail" },
+          { value: "webp", label: "WebP", detail: "formatWebpDetail" },
+          { value: "bmp", label: "BMP", detail: "formatBmpDetail" },
+          { value: "tiff", label: "TIFF", detail: "formatTiffDetail" }
+        ] },
       { id: "to_pdf", label: "m_image_to_pdf", title: "title_image_to_pdf", desc: "desc_image_to_pdf", heading: "oh_order", single: ["single_to_pdf", "single_to_pdf_desc"] },
       { id: "noise", label: "m_image_noise", title: "title_image_noise", desc: "desc_image_noise", heading: "oh_noise", field: "ratio", defaultValue: 5,
         options: [{ value: 5, label: "weak", detail: "ratio5" }, { value: 10, label: "medium", detail: "ratio10" }, { value: 20, label: "strong", detail: "ratio20" }, { value: "custom", label: "custom", detail: "customValue", input: { unit: "%", min: 0, max: 100, step: 1, initial: 15 } }] },
@@ -213,7 +265,8 @@ const elements = {
   pendingFiles: $("#pendingFiles"), pendingList: $("#pendingList"), pendingCount: $("#pendingCount"), addMoreButton: $("#addMoreButton"),
   nextButton: $("#nextButton"), uploadView: $("#uploadView"), convertView: $("#convertView"), backButton: $("#backButton"),
   pageTitle: $("#pageTitle"), pageDescription: $("#pageDescription"), eyebrow: $("#eyebrow"), fileHint: $("#fileHint"),
-  fileCards: $("#fileCards"), fileCount: $("#fileCount"), optionsHeading: $("#optionsHeading"), optionList: $("#optionList"),
+  fileCards: $("#fileCards"), fileCount: $("#fileCount"), fileTotalSize: $("#fileTotalSize"), optionsHeading: $("#optionsHeading"), optionList: $("#optionList"),
+  fileSort: $("#fileSort"), reverseOrderButton: $("#reverseOrderButton"),
   selectionSummary: $("#selectionSummary"), convertButton: $("#convertButton"), languageButton: $("#languageButton"), languageCode: $("#languageCode"),
   languagePicker: $("#languagePicker"), languageMenu: $("#languageMenu"), themeButton: $("#themeButton"),
   progressModal: $("#progressModal"), resultModal: $("#resultModal"), resultFile: $("#resultFile"), downloadButton: $("#downloadButton"),
@@ -221,6 +274,7 @@ const elements = {
   startOverButton: $("#startOverButton"), toastRegion: $("#toastRegion"), sidebar: $("#sidebar"), mobileMenu: $("#mobileMenu")
 };
 
+const MAX_UPLOAD_BYTES = Number(elements.fileInput.dataset.maxUploadBytes) || 2 * 1024 * 1024 * 1024;
 const savedLocale = localStorage.getItem("file-converter-locale");
 const state = {
   locale: translations[savedLocale] ? savedLocale : "zh-Hant",
@@ -233,6 +287,7 @@ const state = {
   jobId: null,
   selectedValue: 20,
   customValues: {},
+  gifFps: 10,
   markdownSettings: {
     orientation: "portrait",
     columns: 1,
@@ -297,7 +352,8 @@ function updateHeadings() {
   elements.pageTitle.textContent = t(mode.title);
   elements.pageDescription.textContent = t(mode.desc);
   elements.eyebrow.textContent = `${state.category.toUpperCase()} CONVERTER`;
-  elements.fileHint.textContent = t(`hint_${state.category}`);
+  elements.fileHint.textContent = `${t(`hint_${state.category}`)} · ${t("uploadLimitHint")}`;
+  elements.fileCards.setAttribute("aria-label", t("uploadedFiles"));
   elements.fileInput.accept = currentCategory().accept;
   elements.optionsHeading.textContent = t(mode.heading);
 }
@@ -353,24 +409,39 @@ function resetModeSelection() {
 
 function extensionOf(name) { return name.includes(".") ? name.split(".").pop().toLowerCase() : ""; }
 
+function blockedImageFormats() {
+  if (state.category !== "image" || state.mode !== "convert_format") return new Set();
+  const blocked = new Set(state.uploadedFiles.map((file) => {
+    const format = (file.format || extensionOf(file.name)).toLowerCase();
+    return { jpg: "jpeg", heif: "heic", hif: "heic", tif: "tiff" }[format] || format;
+  }));
+  if (state.uploadedFiles.length > 1) blocked.delete("gif");
+  return blocked;
+}
+
 function addFiles(fileList) {
   const valid = [...fileList].filter((file) => currentCategory().extensions.includes(extensionOf(file.name)));
   if (valid.length !== fileList.length) showToast(t("invalidType"));
   const existing = new Set(state.pendingFiles.map((file) => `${file.name}:${file.size}:${file.lastModified}`));
+  const additions = [];
   valid.forEach((file) => {
     const signature = `${file.name}:${file.size}:${file.lastModified}`;
-    if (!existing.has(signature) && state.pendingFiles.length < 50) {
-      state.pendingFiles.push(file);
+    if (!existing.has(signature)) {
+      additions.push(file);
       existing.add(signature);
     }
   });
+  const totalSize = state.pendingFiles.concat(additions).reduce((total, file) => total + file.size, 0);
+  if (totalSize > MAX_UPLOAD_BYTES) return showToast(t("uploadTooLarge"));
+  state.pendingFiles = state.pendingFiles.concat(additions);
   renderPendingFiles();
 }
 
 function renderPendingFiles() {
   const hasFiles = state.pendingFiles.length > 0;
   elements.pendingFiles.classList.toggle("hidden", !hasFiles);
-  elements.pendingCount.textContent = hasFiles ? `(${state.pendingFiles.length})` : "";
+  const totalSize = state.pendingFiles.reduce((total, file) => total + file.size, 0);
+  elements.pendingCount.textContent = hasFiles ? `(${state.pendingFiles.length} · ${formatBytes(totalSize)} / 2 GB)` : "";
   elements.nextButton.disabled = !hasFiles;
   elements.pendingList.innerHTML = "";
   state.pendingFiles.forEach((file, index) => {
@@ -417,6 +488,7 @@ function uploadRequest(form) {
 
 async function uploadFiles() {
   if (!state.pendingFiles.length) return showToast(t("noFiles"));
+  if (state.pendingFiles.reduce((total, file) => total + file.size, 0) > MAX_UPLOAD_BYTES) return showToast(t("uploadTooLarge"));
   const form = new FormData();
   form.append("category", state.category);
   state.pendingFiles.forEach((file) => form.append("files", file, file.name));
@@ -425,10 +497,16 @@ async function uploadFiles() {
     const result = await uploadRequest(form);
     setProgress(100, t("uploading"));
     state.jobId = result.job_id;
-    state.uploadedFiles = result.files.map((file, index) => ({
-      ...file,
-      preview: state.category === "image" ? URL.createObjectURL(state.pendingFiles[index]) : null
-    }));
+    state.uploadedFiles = result.files.map((file, index) => {
+      let preview = null;
+      if (state.category === "image") {
+        preview = ["heic", "heif", "hif", "tif", "tiff"].includes(extensionOf(file.name))
+          ? `/api/jobs/${state.jobId}/files/${file.id}/preview`
+          : URL.createObjectURL(state.pendingFiles[index]);
+      }
+      return { ...file, preview, uploadIndex: index };
+    });
+    elements.fileSort.value = "upload";
     elements.progressModal.classList.add("hidden");
     setView("convert");
     renderFileCards();
@@ -451,18 +529,24 @@ function setView(view) {
 }
 
 function renderFileCards() {
-  elements.fileCards.innerHTML = "";
+  const scrollTop = elements.fileCards.scrollTop;
+  const fragment = document.createDocumentFragment();
   elements.fileCount.textContent = `${state.uploadedFiles.length}`;
+  elements.fileSort.disabled = state.uploadedFiles.length < 2;
+  elements.reverseOrderButton.disabled = state.uploadedFiles.length < 2;
+  const totalSize = state.uploadedFiles.reduce((total, file) => total + file.size, 0);
+  elements.fileTotalSize.textContent = `${formatBytes(totalSize)} / 2 GB`;
   state.uploadedFiles.forEach((file, index) => {
     const card = document.createElement("article");
     card.className = "file-card";
     card.draggable = true;
     card.dataset.index = index;
     const preview = file.preview
-      ? `<img src="${file.preview}" alt="">`
+      ? `<img src="${file.preview}" alt="" loading="lazy" decoding="async">`
       : `<svg><use href="#icon-${["pdf", "video", "audio", "markdown"].includes(state.category) ? state.category : "file"}"></use></svg>`;
     card.innerHTML = `
       <div class="file-preview">${preview}</div>
+      <span class="file-order">${index + 1}</span>
       <button class="more-button" type="button" aria-label="More"><svg><use href="#icon-more"></use></svg></button>
       <div class="file-menu hidden"><button type="button">${t("delete")}</button></div>
       <div class="file-details"><div class="file-name" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</div><div class="file-size">${formatBytes(file.size)}</div></div>`;
@@ -473,7 +557,12 @@ function renderFileCards() {
       menu.classList.toggle("hidden");
     });
     menu.querySelector("button").addEventListener("click", () => deleteUploadedFile(file.id));
-    card.addEventListener("dragstart", () => { state.dragIndex = index; card.classList.add("dragging"); });
+    card.addEventListener("dragstart", (event) => {
+      state.dragIndex = index;
+      card.classList.add("dragging");
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", file.id);
+    });
     card.addEventListener("dragend", () => { state.dragIndex = null; card.classList.remove("dragging"); $$(".file-card").forEach((item) => item.classList.remove("drag-over")); });
     card.addEventListener("dragover", (event) => { event.preventDefault(); if (state.dragIndex !== index) card.classList.add("drag-over"); });
     card.addEventListener("dragleave", () => card.classList.remove("drag-over"));
@@ -483,10 +572,33 @@ function renderFileCards() {
       if (state.dragIndex === null || state.dragIndex === index) return;
       const [moved] = state.uploadedFiles.splice(state.dragIndex, 1);
       state.uploadedFiles.splice(index, 0, moved);
+      state.dragIndex = null;
+      elements.fileSort.value = "manual";
       renderFileCards();
     });
-    elements.fileCards.append(card);
+    fragment.append(card);
   });
+  elements.fileCards.replaceChildren(fragment);
+  elements.fileCards.scrollTop = scrollTop;
+}
+
+function sortUploadedFiles() {
+  const mode = elements.fileSort.value;
+  if (mode === "manual") return;
+  const collator = new Intl.Collator(state.locale, { numeric: true, sensitivity: "base" });
+  const uploadOrder = (a, b) => (a.uploadIndex ?? 0) - (b.uploadIndex ?? 0);
+  const comparators = {
+    upload: uploadOrder,
+    name_asc: (a, b) => collator.compare(a.name, b.name) || uploadOrder(a, b),
+    name_desc: (a, b) => collator.compare(b.name, a.name) || uploadOrder(a, b),
+    size_asc: (a, b) => a.size - b.size || uploadOrder(a, b),
+    size_desc: (a, b) => b.size - a.size || uploadOrder(a, b)
+  };
+  if (!comparators[mode]) return;
+  state.uploadedFiles.sort(comparators[mode]);
+  state.dragIndex = null;
+  elements.fileCards.scrollTop = 0;
+  renderFileCards();
 }
 
 async function deleteUploadedFile(fileId) {
@@ -496,7 +608,7 @@ async function deleteUploadedFile(fileId) {
     if (!response.ok || !result.ok) throw new Error(result.error || t("convertFailed"));
     const index = state.uploadedFiles.findIndex((file) => file.id === fileId);
     if (index >= 0) {
-      if (state.uploadedFiles[index].preview) URL.revokeObjectURL(state.uploadedFiles[index].preview);
+      if (state.uploadedFiles[index].preview?.startsWith("blob:")) URL.revokeObjectURL(state.uploadedFiles[index].preview);
       state.uploadedFiles.splice(index, 1);
     }
     if (!state.uploadedFiles.length) {
@@ -505,6 +617,7 @@ async function deleteUploadedFile(fileId) {
       return;
     }
     renderFileCards();
+    renderOptions();
   } catch (error) {
     showToast(error.message);
   }
@@ -647,6 +760,12 @@ function renderMarkdownOptions() {
 
 function renderOptions() {
   const mode = currentMode();
+  const formatConversion = state.category === "image" && mode.id === "convert_format";
+  const blockedFormats = blockedImageFormats();
+  if (formatConversion && (!mode.options.some((option) => option.value === state.selectedValue) || blockedFormats.has(state.selectedValue))) {
+    state.selectedValue = mode.options.find((option) => !blockedFormats.has(option.value))?.value ?? null;
+  }
+  elements.convertButton.disabled = formatConversion && state.selectedValue === null;
   elements.optionsHeading.textContent = t(mode.heading);
   elements.optionList.className = "option-list";
   elements.optionList.innerHTML = "";
@@ -664,23 +783,29 @@ function renderOptions() {
   }
 
   mode.options.forEach((option) => {
+    const disabled = blockedFormats.has(option.value);
     const selected = String(state.selectedValue) === String(option.value);
     const row = document.createElement("div");
-    row.className = `option-row${selected ? " selected" : ""}`;
-    row.tabIndex = 0;
+    row.className = `option-row${selected ? " selected" : ""}${disabled ? " disabled" : ""}`;
+    row.dataset.value = String(option.value);
+    row.tabIndex = disabled ? -1 : 0;
     row.setAttribute("role", "radio");
     row.setAttribute("aria-checked", selected ? "true" : "false");
+    row.setAttribute("aria-disabled", disabled ? "true" : "false");
     let input = "";
     if (option.input) {
       const value = state.customValues[modeKey()] ?? option.input.initial;
       input = `<label class="custom-field"><input type="number" min="${option.input.min}" max="${option.input.max}" step="${option.input.step}" value="${value}" aria-label="${t("customValue")}"><span>${inputUnit(option.input)}</span></label>`;
     }
-    row.innerHTML = `<span class="radio-dot"></span><span class="option-copy"><strong>${t(option.label)}</strong><small>${t(option.detail)}</small></span>${input}`;
-    const select = () => { state.selectedValue = option.value; renderOptions(); };
+    if (formatConversion && option.value === "gif") {
+      input = `<label class="gif-fps-field"><span>FPS</span><input id="gifFps" type="number" min="1" max="60" step="1" value="${state.gifFps}" aria-label="${t("gifFpsLabel")}" title="${t("gifFpsHint")}"${disabled ? " disabled" : ""}></label>`;
+    }
+    row.innerHTML = `<span class="radio-dot"></span><span class="option-copy"><strong>${t(option.label)}</strong><small>${t(disabled ? "sameImageFormat" : option.detail)}</small></span>${input}`;
+    const select = () => { if (disabled) return; state.selectedValue = option.value; renderOptions(); };
     row.addEventListener("click", (event) => { if (!event.target.matches("input")) select(); });
     row.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); select(); } });
     const inputElement = row.querySelector("input");
-    if (inputElement) {
+    if (inputElement && option.input) {
       inputElement.addEventListener("focus", () => { state.selectedValue = option.value; row.classList.add("selected"); });
       inputElement.addEventListener("input", () => {
         state.selectedValue = option.value;
@@ -688,6 +813,28 @@ function renderOptions() {
         updateSelectionSummary();
       });
       inputElement.addEventListener("click", (event) => event.stopPropagation());
+    }
+    if (formatConversion && option.value === "gif") {
+      const field = row.querySelector(".gif-fps-field");
+      const fpsInput = field.querySelector("input");
+      const selectGif = () => {
+        if (disabled) return;
+        state.selectedValue = "gif";
+        elements.optionList.querySelectorAll(".option-row").forEach((other) => {
+          const checked = other.dataset.value === "gif";
+          other.classList.toggle("selected", checked);
+          other.setAttribute("aria-checked", checked ? "true" : "false");
+        });
+        updateSelectionSummary();
+      };
+      field.addEventListener("click", (event) => event.stopPropagation());
+      fpsInput.addEventListener("keydown", (event) => event.stopPropagation());
+      fpsInput.addEventListener("focus", selectGif);
+      fpsInput.addEventListener("input", () => {
+        if (disabled) return;
+        state.gifFps = fpsInput.value;
+        selectGif();
+      });
     }
     elements.optionList.append(row);
   });
@@ -697,7 +844,16 @@ function renderOptions() {
 function updateSelectionSummary() {
   const mode = currentMode();
   const option = mode.options?.find((item) => String(item.value) === String(state.selectedValue));
-  if (!option) return;
+  if (!option) {
+    if (state.category === "image" && state.mode === "convert_format") {
+      elements.selectionSummary.textContent = t("noAvailableImageFormat");
+    }
+    return;
+  }
+  if (state.category === "image" && mode.id === "convert_format" && option.value === "gif") {
+    elements.selectionSummary.textContent = `GIF · ${state.gifFps || "—"} FPS`;
+    return;
+  }
   if (option.input) {
     elements.selectionSummary.textContent = `${state.customValues[modeKey()] ?? option.input.initial} ${inputUnit(option.input)}`;
   } else {
@@ -725,12 +881,20 @@ function conversionOptions() {
   }
   if (!mode.field) return {};
   const option = mode.options.find((item) => String(item.value) === String(state.selectedValue));
+  if (state.category === "image" && state.mode === "convert_format" && (!option || blockedImageFormats().has(option.value))) {
+    throw new Error(t("chooseDifferentImageFormat"));
+  }
   let value = state.selectedValue;
   if (option?.input) {
     value = Number(state.customValues[modeKey()] ?? option.input.initial);
     if (!Number.isFinite(value) || value < option.input.min || value > option.input.max) {
       throw new Error(`${t("customValue")}: ${option.input.min}–${option.input.max} ${inputUnit(option.input)}`);
     }
+  }
+  if (state.category === "image" && mode.id === "convert_format" && value === "gif") {
+    const fps = Number(state.gifFps);
+    if (!Number.isInteger(fps) || fps < 1 || fps > 60) throw new Error(t("gifFpsRange"));
+    return { format: "gif", fps };
   }
   return { [mode.field]: value };
 }
@@ -814,7 +978,7 @@ function startOver() {
 }
 
 function revokePreviews() {
-  state.uploadedFiles.forEach((file) => { if (file.preview) URL.revokeObjectURL(file.preview); });
+  state.uploadedFiles.forEach((file) => { if (file.preview?.startsWith("blob:")) URL.revokeObjectURL(file.preview); });
 }
 
 function escapeHtml(value) {
@@ -833,6 +997,23 @@ elements.fileInput.addEventListener("change", () => { addFiles(elements.fileInpu
 ["dragenter", "dragover"].forEach((name) => elements.dropzone.addEventListener(name, (event) => { event.preventDefault(); elements.dropzone.classList.add("dragging"); }));
 ["dragleave", "drop"].forEach((name) => elements.dropzone.addEventListener(name, (event) => { event.preventDefault(); elements.dropzone.classList.remove("dragging"); }));
 elements.dropzone.addEventListener("drop", (event) => addFiles(event.dataTransfer.files));
+
+elements.fileSort.addEventListener("change", sortUploadedFiles);
+elements.reverseOrderButton.addEventListener("click", () => {
+  state.uploadedFiles.reverse();
+  state.dragIndex = null;
+  elements.fileSort.value = "manual";
+  elements.fileCards.scrollTop = 0;
+  renderFileCards();
+});
+
+elements.fileCards.addEventListener("dragover", (event) => {
+  if (state.dragIndex === null) return;
+  event.preventDefault();
+  const bounds = elements.fileCards.getBoundingClientRect();
+  if (event.clientY < bounds.top + 48) elements.fileCards.scrollTop -= 24;
+  else if (event.clientY > bounds.bottom - 48) elements.fileCards.scrollTop += 24;
+});
 elements.nextButton.addEventListener("click", uploadFiles);
 elements.convertButton.addEventListener("click", convertFiles);
 elements.backButton.addEventListener("click", startOver);
