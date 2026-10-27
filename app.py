@@ -14,8 +14,9 @@ from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.utils import secure_filename
 
 from converter import (
-    IMAGE_OUTPUT_FORMATS, ConversionError, convert, detect_image_format, image_preview,
-    reset_output_dir, validate_image_format_change,
+    AUDIO_OUTPUT_FORMATS, IMAGE_OUTPUT_FORMATS, VIDEO_OUTPUT_FORMATS, ConversionError, convert,
+    detect_audio_format, detect_image_format, detect_video_format, image_preview, reset_output_dir,
+    validate_audio_format_change, validate_image_format_change, validate_video_format_change,
 )
 
 
@@ -43,8 +44,8 @@ CATEGORY_EXTENSIONS = {
 
 VALID_MODES = {
     "image": {"compress", "convert_format", "to_pdf", "noise", "blur"},
-    "video": {"compress", "split", "extract_frames", "extract_audio"},
-    "audio": {"volume"},
+    "video": {"compress", "convert_format", "split", "extract_frames", "extract_audio"},
+    "audio": {"convert_format", "volume"},
     "pdf": {"compress", "merge", "to_images"},
     "markdown": {"to_pdf"},
 }
@@ -192,6 +193,21 @@ def _number(value, label: str, minimum: float, maximum: float) -> float:
 
 
 def _validate_options(category: str, mode: str, options: dict) -> dict:
+    if category == "video" and mode == "convert_format":
+        output_format = options.get("format", "mp4")
+        if not isinstance(output_format, str):
+            raise ConversionError("不支援的影片輸出格式。")
+        output_format = {"mpg": "mpeg", "m4v": "mp4", "h265": "hevc", "h.265": "hevc"}.get(
+            output_format.lower(), output_format.lower()
+        )
+        if output_format not in VIDEO_OUTPUT_FORMATS:
+            raise ConversionError("不支援的影片輸出格式。")
+        return {"format": output_format}
+    if category == "audio" and mode == "convert_format":
+        output_format = options.get("format", "mp3")
+        if not isinstance(output_format, str) or output_format.lower() not in AUDIO_OUTPUT_FORMATS:
+            raise ConversionError("不支援的音檔輸出格式。")
+        return {"format": output_format.lower()}
     if category == "image" and mode == "convert_format":
         output_format = options.get("format", "png")
         if not isinstance(output_format, str):
@@ -318,7 +334,11 @@ def upload():
                     "stored_name": stored_name,
                     "size": destination.stat().st_size,
                     "mime": item.mimetype or mimetypes.guess_type(original_name)[0] or "application/octet-stream",
-                    "format": detect_image_format(destination) if category == "image" else None,
+                    "format": (
+                        detect_image_format(destination) if category == "image"
+                        else detect_audio_format(destination) if category == "audio"
+                        else detect_video_format(destination) if category == "video" else None
+                    ),
                 }
             )
 
@@ -421,6 +441,16 @@ def convert_files():
     if category == "image" and mode == "convert_format":
         try:
             validate_image_format_change(files, options["format"])
+        except ConversionError as exc:
+            return _json_error(str(exc))
+    if category == "audio" and mode == "convert_format":
+        try:
+            validate_audio_format_change(files, options["format"])
+        except ConversionError as exc:
+            return _json_error(str(exc))
+    if category == "video" and mode == "convert_format":
+        try:
+            validate_video_format_change(files, options["format"])
         except ConversionError as exc:
             return _json_error(str(exc))
 

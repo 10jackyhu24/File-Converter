@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import math
 import os
 import shutil
@@ -24,6 +25,26 @@ IMAGE_OUTPUT_FORMATS = {
     "webp": ("WEBP", ".webp"),
     "bmp": ("BMP", ".bmp"),
     "tiff": ("TIFF", ".tiff"),
+}
+
+AUDIO_OUTPUT_FORMATS = {
+    "mp3": ("libmp3lame", ".mp3"),
+    "wav": ("pcm_s16le", ".wav"),
+    "m4a": ("aac", ".m4a"),
+    "aac": ("aac", ".aac"),
+    "ogg": ("libvorbis", ".ogg"),
+    "flac": ("flac", ".flac"),
+    "opus": ("libopus", ".opus"),
+}
+
+VIDEO_OUTPUT_FORMATS = {
+    "mp4": ("libx264", "aac", ".mp4"),
+    "hevc": ("libx265", "aac", ".mp4"),
+    "mov": ("libx264", "aac", ".mov"),
+    "avi": ("mpeg4", "libmp3lame", ".avi"),
+    "mkv": ("libx264", "aac", ".mkv"),
+    "webm": ("libvpx-vp9", "libopus", ".webm"),
+    "mpeg": ("mpeg2video", "mp2", ".mpeg"),
 }
 
 
@@ -168,6 +189,35 @@ def _ffprobe_duration(path: Path) -> float:
         return duration
     except (FileNotFoundError, ValueError, subprocess.TimeoutExpired) as exc:
         raise ConversionError("無法讀取影片長度，請確認檔案可正常播放且 FFprobe 已安裝。") from exc
+
+
+def _probe_media_format(source: Path, media_type: str) -> dict:
+    label, selector = ("影片", "v:0") if media_type == "video" else ("音檔", "a:0")
+    try:
+        result = subprocess.run(
+            [
+                "ffprobe", "-v", "error", "-select_streams", selector,
+                "-show_entries", "format=format_name:format_tags=major_brand:stream=codec_name",
+                "-of", "json", str(source),
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=60,
+            creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
+        )
+    except FileNotFoundError as exc:
+        raise ConversionError("找不到 FFprobe。請先安裝 FFmpeg 並加入 PATH。") from exc
+    except subprocess.TimeoutExpired as exc:
+        raise ConversionError(f"讀取{label}格式逾時，請確認檔案可正常播放。") from exc
+    try:
+        info = json.loads(result.stdout)
+    except json.JSONDecodeError as exc:
+        raise ConversionError(f"無法辨識{label}格式，請確認檔案未損壞。") from exc
+    if result.returncode != 0 or not info.get("streams"):
+        raise ConversionError(f"無法辨識{label}格式，請確認檔案未損壞且包含{'影像' if media_type == 'video' else '音訊'}。")
+    return info
 
 
 def _zip_paths(zip_path: Path, items: Iterable[tuple[Path, str]]) -> Path:
@@ -514,6 +564,92 @@ def image_blur(
     return result_path
 
 
+def detect_video_format(source: Path) -> str:
+    info = _probe_media_format(source, "video")
+    container = info.get("format", {})
+    containers = set(container.get("format_name", "").split(","))
+    if containers & {"mov", "mp4", "m4a"}:
+        brand = container.get("tags", {}).get("major_brand", "").strip()
+        if brand in {"", "qt"}:
+            return "mov"
+        return "hevc" if info["streams"][0].get("codec_name") == "hevc" else "mp4"
+    if containers & {"matroska", "webm"}:
+        # Both containers use the same FFprobe demuxer; the EBML DocType distinguishes them.
+        with source.open("rb") as stream:
+            header = stream.read(4096)
+        marker = header.find(b"\x42\x82")
+        if 0 <= marker < len(header) - 2:
+            offset = marker + 2
+            size_length = 9 - header[offset].bit_length()
+            if 1 <= size_length <= 8 and offset + size_length <= len(header):
+                size = int.from_bytes(header[offset:offset + size_length], "big") & ((1 << (7 * size_length)) - 1)
+                value = header[offset + size_length:offset + size_length + size]
+                if value == b"webm":
+                    return "webm"
+        return "mkv"
+    for output_format in ("avi", "mpeg"):
+        if output_format in containers:
+            return output_format
+    raise ConversionError("不支援的影片格式，請確認檔案內容與副檔名相符。")
+
+
+def validate_video_format_change(files: list[tuple[Path, str]], output_format: str) -> None:
+    for source, original_name in files:
+        if detect_video_format(source) == output_format:
+            raise ConversionError(f"「{original_name}」已經是 {output_format.upper()} 格式，請選擇其他輸出格式。")
+
+
+def video_convert_format(
+    files: list[tuple[Path, str]],
+    output_dir: Path,
+    output_format: str,
+    progress: ProgressCallback | None = None,
+) -> Path:
+    if output_format not in VIDEO_OUTPUT_FORMATS:
+        raise ConversionError("不支援的影片輸出格式。")
+    validate_video_format_change(files, output_format)
+    video_codec, audio_codec, extension = VIDEO_OUTPUT_FORMATS[output_format]
+    if output_format == "hevc":
+        encoding_options = [
+            "-preset", "medium", "-crf", "24", "-tag:v", "hvc1",
+            "-b:a", "192k", "-movflags", "+faststart",
+        ]
+    elif output_format in {"mp4", "mov", "mkv"}:
+        encoding_options = ["-preset", "medium", "-crf", "20", "-b:a", "192k"]
+        if output_format in {"mp4", "mov"}:
+            encoding_options += ["-movflags", "+faststart"]
+    elif output_format == "webm":
+        encoding_options = [
+            "-crf", "30", "-b:v", "0", "-deadline", "good", "-cpu-used", "2",
+            "-b:a", "128k", "-ar", "48000", "-ac", "2",
+        ]
+    elif output_format == "mpeg":
+        encoding_options = ["-q:v", "3", "-r", "30", "-b:a", "192k", "-ar", "48000", "-ac", "2"]
+    else:
+        encoding_options = ["-q:v", "3", "-q:a", "2", "-ac", "2"]
+    generated: list[tuple[Path, str]] = []
+    for index, (source, original_name) in enumerate(files):
+        _file_progress(progress, index, len(files), original_name, 1)
+        duration = _ffprobe_duration(source)
+        destination = _unique_path(output_dir, f"{_safe_stem(original_name)}{extension}")
+        _run(
+            [
+                "ffmpeg", "-y", "-i", str(source), "-map", "0:v:0", "-map", "0:a:0?",
+                "-c:v", video_codec, "-c:a", audio_codec,
+                "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2", "-pix_fmt", "yuv420p",
+                *encoding_options, str(destination),
+            ],
+            progress_callback=lambda value, i=index, name=original_name: _file_progress(
+                progress, i, len(files), name, value
+            ),
+            duration=duration,
+        )
+        generated.append((destination, destination.name))
+    result = generated[0][0] if len(generated) == 1 else _zip_paths(output_dir / "converted_videos.zip", generated)
+    _report(progress, 98)
+    return result
+
+
 def video_compress(
     files: list[tuple[Path, str]],
     output_dir: Path,
@@ -679,6 +815,64 @@ def video_audio(
         )
         generated.append((destination, destination.name))
     result = generated[0][0] if len(generated) == 1 else _zip_paths(output_dir / "extracted_audio.zip", generated)
+    _report(progress, 98)
+    return result
+
+
+def detect_audio_format(source: Path) -> str:
+    info = _probe_media_format(source, "audio")
+    streams = info.get("streams", [])
+    containers = set(info.get("format", {}).get("format_name", "").split(","))
+    if "ogg" in containers:
+        return "opus" if streams[0].get("codec_name") == "opus" else "ogg"
+    if containers & {"mov", "mp4", "m4a"}:
+        return "m4a"
+    for output_format in ("mp3", "wav", "aac", "flac"):
+        if output_format in containers:
+            return output_format
+    raise ConversionError("不支援的音檔格式，請確認檔案內容與副檔名相符。")
+
+
+def validate_audio_format_change(files: list[tuple[Path, str]], output_format: str) -> None:
+    for source, original_name in files:
+        if detect_audio_format(source) == output_format:
+            raise ConversionError(f"「{original_name}」已經是 {output_format.upper()} 格式，請選擇其他輸出格式。")
+
+
+def audio_convert_format(
+    files: list[tuple[Path, str]],
+    output_dir: Path,
+    output_format: str,
+    progress: ProgressCallback | None = None,
+) -> Path:
+    if output_format not in AUDIO_OUTPUT_FORMATS:
+        raise ConversionError("不支援的音檔輸出格式。")
+    validate_audio_format_change(files, output_format)
+    codec, extension = AUDIO_OUTPUT_FORMATS[output_format]
+    encoding_options = {
+        "mp3": ["-q:a", "2"],
+        "m4a": ["-b:a", "192k"],
+        "aac": ["-b:a", "192k"],
+        "ogg": ["-q:a", "5"],
+        "opus": ["-b:a", "128k", "-ar", "48000"],
+    }.get(output_format, [])
+    generated: list[tuple[Path, str]] = []
+    for index, (source, original_name) in enumerate(files):
+        _file_progress(progress, index, len(files), original_name, 1)
+        duration = _ffprobe_duration(source)
+        destination = _unique_path(output_dir, f"{_safe_stem(original_name)}{extension}")
+        _run(
+            [
+                "ffmpeg", "-y", "-i", str(source), "-map", "0:a:0", "-vn",
+                "-c:a", codec, *encoding_options, str(destination),
+            ],
+            progress_callback=lambda value, i=index, name=original_name: _file_progress(
+                progress, i, len(files), name, value
+            ),
+            duration=duration,
+        )
+        generated.append((destination, destination.name))
+    result = generated[0][0] if len(generated) == 1 else _zip_paths(output_dir / "converted_audio.zip", generated)
     _report(progress, 98)
     return result
 
@@ -956,6 +1150,8 @@ def convert(
             return image_blur(files, output_dir, float(options["pixels"]), progress)
         if category == "video" and mode == "compress":
             return video_compress(files, output_dir, float(options["target_mb"]), progress)
+        if category == "video" and mode == "convert_format":
+            return video_convert_format(files, output_dir, options["format"], progress)
         if category == "video" and mode == "split":
             return video_split(
                 files, output_dir, float(options["segment_minutes"]), progress
@@ -967,6 +1163,8 @@ def convert(
             return video_audio(
                 files, output_dir, bitrate if bitrate == "lossless" else int(bitrate), progress
             )
+        if category == "audio" and mode == "convert_format":
+            return audio_convert_format(files, output_dir, options["format"], progress)
         if category == "audio" and mode == "volume":
             return audio_volume(files, output_dir, float(options["db"]), progress)
         if category == "pdf" and mode == "compress":

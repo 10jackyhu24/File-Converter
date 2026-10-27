@@ -14,13 +14,13 @@ const translations = {
     uploadFailed: "上傳失敗，請再試一次。", convertFailed: "轉換失敗，請再試一次。", invalidType: "請選擇符合目前分類的檔案。",
     noFiles: "請先選擇檔案。", minTwoPdf: "連接 PDF 至少需要兩個檔案。", confirmDeleteLast: "已刪除最後一個檔案，請重新上傳。",
     uploadLimitHint: "總大小上限 2 GB，不限制檔案數量", uploadTooLarge: "檔案總大小不可超過 2 GB，請減少選擇的檔案。",
-    hint_image: "支援 JPG、PNG、GIF、HEIC／HEIF、WEBP、BMP、TIFF",
-    hint_video: "支援 MP4、MOV、AVI、MKV、WEBM、MPEG",
+    hint_image: "支援 JPG、PNG、GIF、HEIC、HEIF、WEBP、BMP、TIFF",
+    hint_video: "支援 MP4、M4V、MOV、HEVC、AVI、MKV、WEBM、MPEG、MPG",
     hint_audio: "支援 MP3、WAV、M4A、AAC、OGG、FLAC、OPUS",
     hint_pdf: "支援 PDF；連接時可拖曳調整頁面順序",
     hint_markdown: "支援 UTF-8 編碼的 MD、MARKDOWN、MDOWN、MKD",
     m_image_compress: "壓縮檔案大小", m_image_to_pdf: "轉 PDF", m_image_noise: "添加雜訊", m_image_blur: "模糊處理",
-    m_image_convert_format: "圖片格式轉換", title_image_convert_format: "圖片格式轉換",
+    convertFormat: "格式轉換",
     desc_image_convert_format: "將圖片轉為 PNG、JPEG、GIF、HEIC 等格式。GIF 會依排列順序合成一個動畫；動畫轉為靜態格式時逐幀輸出並打包成 ZIP。",
     oh_image_format: "選擇輸出圖片格式",
     sameImageFormat: "已上傳的圖片包含此格式，請選擇其他格式",
@@ -34,6 +34,24 @@ const translations = {
     sortSizeAsc: "以檔案大小排序（小到大）", sortSizeDesc: "以檔案大小排序（大到小）", reverseOrder: "反轉目前順序",
     formatWebpDetail: "體積較小，保留透明背景與動畫", formatBmpDetail: "未壓縮點陣圖，透明區域轉為白底", formatTiffDetail: "適合列印與影像編輯",
     m_video_compress: "壓縮檔案大小", m_video_split: "分割影片", m_video_extract_frames: "提取圖片", m_video_extract_audio: "提取音檔",
+    desc_video_convert_format: "將影片轉為 MP4、HEVC（MP4）、MOV、AVI、MKV、WebM 或 MPEG，支援 iPhone HEVC 影片，多檔轉換會打包成 ZIP。",
+    oh_video_format: "選擇輸出影片格式",
+    sameVideoFormat: "已上傳的影片包含此格式，請選擇其他格式",
+    chooseDifferentVideoFormat: "請選擇與已上傳影片不同的輸出格式。",
+    noAvailableVideoFormat: "所有格式都已包含，請移除部分影片或分批轉換",
+    formatMp4Detail: "H.264，適合分享與播放（含 M4V）", formatMovDetail: "H.264，適合 Apple 裝置與影片編輯",
+    formatHevcDetail: "H.265 高效率編碼，以 MP4 儲存，適合支援 HEVC 的裝置",
+    formatAviDetail: "傳統影片格式，相容常見播放器", formatMkvDetail: "適合高畫質影片與本機播放",
+    formatWebmDetail: "適合網頁播放，使用 VP9／Opus", formatMpegDetail: "MPEG-2／MP2，輸出 30 FPS",
+    desc_audio_convert_format: "將音檔轉為 MP3、WAV、M4A、AAC、OGG、FLAC 或 OPUS，多檔轉換會打包成 ZIP。",
+    oh_audio_format: "選擇輸出音檔格式",
+    sameAudioFormat: "已上傳的音檔包含此格式，請選擇其他格式",
+    chooseDifferentAudioFormat: "請選擇與已上傳音檔不同的輸出格式。",
+    noAvailableAudioFormat: "所有格式都已包含，請移除部分音檔或分批轉換",
+    formatMp3Detail: "相容性高，適合一般播放", formatWavDetail: "未壓縮 PCM，適合音訊編輯",
+    formatM4aDetail: "AAC 編碼，適合手機與音樂播放", formatAacDetail: "獨立 AAC 音檔，體積較小",
+    formatOggDetail: "Vorbis 編碼，開放格式", formatFlacDetail: "無損壓縮，保留解碼後的音訊",
+    formatOpusDetail: "高效率壓縮，適合語音與音樂",
     m_audio_volume: "音量調整", m_pdf_compress: "壓縮檔案大小", m_pdf_merge: "連接 PDF", m_pdf_to_images: "轉圖片", m_markdown_to_pdf: "轉 PDF",
     title_image_compress: "壓縮圖片", title_image_to_pdf: "圖片轉 PDF", title_image_noise: "為圖片添加雜訊", title_image_blur: "模糊圖片",
     title_video_compress: "壓縮影片", title_video_split: "分割影片", title_video_extract_frames: "從影片提取圖片", title_video_extract_audio: "從影片提取音檔",
@@ -79,12 +97,12 @@ const translations = {
     noFiles: "Choose at least one file first.", minTwoPdf: "Merging PDFs requires at least two files.", confirmDeleteLast: "The last file was removed. Please upload again.",
     uploadLimitHint: "2 GB total limit, no file count limit", uploadTooLarge: "The total file size must not exceed 2 GB. Select fewer files.",
     hint_image: "Supports JPG, PNG, GIF, HEIC/HEIF, WEBP, BMP and TIFF",
-    hint_video: "Supports MP4, MOV, AVI, MKV, WEBM and MPEG",
+    hint_video: "Supports MP4/M4V, MOV (including iPhone HEVC), AVI, MKV, WEBM and MPEG/MPG",
     hint_audio: "Supports MP3, WAV, M4A, AAC, OGG, FLAC and OPUS",
     hint_pdf: "Supports PDF; drag to set the merge order",
     hint_markdown: "Supports UTF-8 MD, MARKDOWN, MDOWN and MKD files",
     m_image_compress: "Compress size", m_image_to_pdf: "Convert to PDF", m_image_noise: "Add noise", m_image_blur: "Blur",
-    m_image_convert_format: "Convert image format", title_image_convert_format: "Convert image format",
+    convertFormat: "Convert format",
     desc_image_convert_format: "Convert images to PNG, JPEG, GIF, HEIC and more. GIF combines all images into one animation in the displayed order; static formats export every animation frame in a ZIP.",
     oh_image_format: "Choose an output image format",
     sameImageFormat: "An uploaded image already uses this format; choose another",
@@ -98,6 +116,24 @@ const translations = {
     sortSizeAsc: "File size: smallest first", sortSizeDesc: "File size: largest first", reverseOrder: "Reverse current order",
     formatWebpDetail: "Compact files with transparency and animation", formatBmpDetail: "Uncompressed bitmap; transparent areas become white", formatTiffDetail: "Suitable for printing and image editing",
     m_video_compress: "Compress size", m_video_split: "Split video", m_video_extract_frames: "Extract images", m_video_extract_audio: "Extract audio",
+    desc_video_convert_format: "Convert videos to MP4, HEVC (MP4), MOV, AVI, MKV, WebM or MPEG, including iPhone HEVC inputs. Multiple outputs are bundled in a ZIP file.",
+    oh_video_format: "Choose an output video format",
+    sameVideoFormat: "An uploaded video already uses this format; choose another",
+    chooseDifferentVideoFormat: "Choose an output format different from the uploaded videos.",
+    noAvailableVideoFormat: "All formats are present; remove some videos or convert in separate batches",
+    formatMp4Detail: "H.264 for sharing and playback, including M4V", formatMovDetail: "H.264 for Apple devices and video editing",
+    formatHevcDetail: "Efficient H.265 encoding in MP4 for HEVC-capable devices",
+    formatAviDetail: "Traditional format for common video players", formatMkvDetail: "Suitable for high-quality video and local playback",
+    formatWebmDetail: "For web playback with VP9/Opus", formatMpegDetail: "MPEG-2/MP2 at 30 FPS",
+    desc_audio_convert_format: "Convert audio to MP3, WAV, M4A, AAC, OGG, FLAC or OPUS. Multiple outputs are bundled in a ZIP file.",
+    oh_audio_format: "Choose an output audio format",
+    sameAudioFormat: "An uploaded audio file already uses this format; choose another",
+    chooseDifferentAudioFormat: "Choose an output format different from the uploaded audio files.",
+    noAvailableAudioFormat: "All formats are present; remove some audio files or convert in separate batches",
+    formatMp3Detail: "Widely supported for everyday playback", formatWavDetail: "Uncompressed PCM for audio editing",
+    formatM4aDetail: "AAC encoding for phones and music playback", formatAacDetail: "Compact standalone AAC audio",
+    formatOggDetail: "Open format with Vorbis encoding", formatFlacDetail: "Lossless compression of decoded audio",
+    formatOpusDetail: "Efficient compression for speech and music",
     m_audio_volume: "Adjust volume", m_pdf_compress: "Compress size", m_pdf_merge: "Merge PDFs", m_pdf_to_images: "Convert to images", m_markdown_to_pdf: "Convert to PDF",
     title_image_compress: "Compress images", title_image_to_pdf: "Images to PDF", title_image_noise: "Add image noise", title_image_blur: "Blur images",
     title_video_compress: "Compress videos", title_video_split: "Split video", title_video_extract_frames: "Extract video frames", title_video_extract_audio: "Extract video audio",
@@ -143,12 +179,12 @@ const translations = {
     noFiles: "先にファイルを選択してください。", minTwoPdf: "PDFの結合には2つ以上のファイルが必要です。", confirmDeleteLast: "最後のファイルを削除しました。再度アップロードしてください。",
     uploadLimitHint: "合計 2 GB まで、ファイル数制限なし", uploadTooLarge: "ファイルの合計サイズは 2 GB までです。選択するファイルを減らしてください。",
     hint_image: "JPG、PNG、GIF、HEIC／HEIF、WEBP、BMP、TIFF に対応",
-    hint_video: "MP4、MOV、AVI、MKV、WEBM、MPEG に対応",
+    hint_video: "MP4／M4V、MOV（iPhone HEVCを含む）、AVI、MKV、WEBM、MPEG／MPG に対応",
     hint_audio: "MP3、WAV、M4A、AAC、OGG、FLAC、OPUS に対応",
     hint_pdf: "PDF に対応；ドラッグで結合順を変更できます",
     hint_markdown: "UTF-8 の MD、MARKDOWN、MDOWN、MKD に対応",
     m_image_compress: "サイズ圧縮", m_image_to_pdf: "PDFに変換", m_image_noise: "ノイズ追加", m_image_blur: "ぼかし",
-    m_image_convert_format: "画像形式を変換", title_image_convert_format: "画像形式を変換",
+    convertFormat: "形式を変換",
     desc_image_convert_format: "PNG、JPEG、GIF、HEIC などに変換します。GIF は表示順に1つのアニメーションへ結合し、静止画形式では全フレームをZIPにまとめて出力します。",
     oh_image_format: "出力する画像形式を選択",
     sameImageFormat: "アップロードした画像にこの形式が含まれています。他の形式を選択してください",
@@ -162,6 +198,24 @@ const translations = {
     sortSizeAsc: "ファイルサイズ：小さい順", sortSizeDesc: "ファイルサイズ：大きい順", reverseOrder: "現在の順序を反転",
     formatWebpDetail: "軽量、透明背景とアニメーションを保持", formatBmpDetail: "非圧縮ビットマップ。透明部分は白背景に変換", formatTiffDetail: "印刷や画像編集向け",
     m_video_compress: "サイズ圧縮", m_video_split: "動画を分割", m_video_extract_frames: "画像を抽出", m_video_extract_audio: "音声を抽出",
+    desc_video_convert_format: "MP4、HEVC（MP4）、MOV、AVI、MKV、WebM、MPEGに変換します。iPhoneのHEVC動画にも対応し、複数の出力はZIPにまとめます。",
+    oh_video_format: "出力する動画形式を選択",
+    sameVideoFormat: "アップロードした動画にこの形式が含まれています。他の形式を選択してください",
+    chooseDifferentVideoFormat: "アップロードした動画と異なる出力形式を選択してください。",
+    noAvailableVideoFormat: "すべての形式が含まれています。一部の動画を削除するか、分けて変換してください",
+    formatMp4Detail: "共有や再生向けのH.264（M4Vを含む）", formatMovDetail: "Appleデバイスや動画編集向けのH.264",
+    formatHevcDetail: "HEVC対応機器向けのH.265をMP4に保存",
+    formatAviDetail: "一般的なプレイヤー向けの従来形式", formatMkvDetail: "高画質動画やローカル再生向け",
+    formatWebmDetail: "VP9／Opusによるウェブ再生向け", formatMpegDetail: "MPEG-2／MP2、30 FPSで出力",
+    desc_audio_convert_format: "MP3、WAV、M4A、AAC、OGG、FLAC、OPUSに変換します。複数の出力はZIPにまとめます。",
+    oh_audio_format: "出力する音声形式を選択",
+    sameAudioFormat: "アップロードした音声にこの形式が含まれています。他の形式を選択してください",
+    chooseDifferentAudioFormat: "アップロードした音声と異なる出力形式を選択してください。",
+    noAvailableAudioFormat: "すべての形式が含まれています。一部の音声を削除するか、分けて変換してください",
+    formatMp3Detail: "幅広い機器で再生可能", formatWavDetail: "音声編集向けの非圧縮PCM",
+    formatM4aDetail: "スマートフォンや音楽再生向けのAAC", formatAacDetail: "軽量な単独AAC音声ファイル",
+    formatOggDetail: "Vorbisを使用するオープン形式", formatFlacDetail: "デコード後の音声を可逆圧縮",
+    formatOpusDetail: "音声や音楽を効率よく圧縮",
     m_audio_volume: "音量調整", m_pdf_compress: "サイズ圧縮", m_pdf_merge: "PDFを結合", m_pdf_to_images: "画像に変換", m_markdown_to_pdf: "PDFに変換",
     title_image_compress: "画像を圧縮", title_image_to_pdf: "画像をPDFに変換", title_image_noise: "画像にノイズを追加", title_image_blur: "画像をぼかす",
     title_video_compress: "動画を圧縮", title_video_split: "動画を分割", title_video_extract_frames: "動画から画像を抽出", title_video_extract_audio: "動画から音声を抽出",
@@ -202,7 +256,7 @@ const categoryConfig = {
     modes: [
       { id: "compress", label: "m_image_compress", title: "title_image_compress", desc: "desc_image_compress", heading: "oh_target", field: "target_mb", defaultValue: 20,
         options: [{ value: 20, label: "preset_discord", detail: "20 MB" }, { value: "custom", label: "customSize", detail: "customValue", input: { unit: "MB", min: .1, max: 2048, step: .1, initial: 10 } }] },
-      { id: "convert_format", label: "m_image_convert_format", title: "title_image_convert_format", desc: "desc_image_convert_format", heading: "oh_image_format", field: "format", defaultValue: "png",
+      { id: "convert_format", label: "convertFormat", title: "convertFormat", desc: "desc_image_convert_format", heading: "oh_image_format", field: "format", defaultValue: "png",
         options: [
           { value: "png", label: "PNG", detail: "formatPngDetail" },
           { value: "jpeg", label: "JPEG", detail: "formatJpegDetail" },
@@ -225,6 +279,16 @@ const categoryConfig = {
     modes: [
       { id: "compress", label: "m_video_compress", title: "title_video_compress", desc: "desc_video_compress", heading: "oh_target", field: "target_mb", defaultValue: 20,
         options: [{ value: 20, label: "preset_discord", detail: "20 MB" }, { value: "custom", label: "customSize", detail: "customValue", input: { unit: "MB", min: .1, max: 2048, step: .1, initial: 100 } }] },
+      { id: "convert_format", label: "convertFormat", title: "convertFormat", desc: "desc_video_convert_format", heading: "oh_video_format", field: "format", defaultValue: "mp4",
+        options: [
+          { value: "mp4", label: "MP4", detail: "formatMp4Detail" },
+          { value: "hevc", label: "HEVC (MP4)", detail: "formatHevcDetail" },
+          { value: "mov", label: "MOV", detail: "formatMovDetail" },
+          { value: "avi", label: "AVI", detail: "formatAviDetail" },
+          { value: "mkv", label: "MKV", detail: "formatMkvDetail" },
+          { value: "webm", label: "WebM", detail: "formatWebmDetail" },
+          { value: "mpeg", label: "MPEG / MPG", detail: "formatMpegDetail" }
+        ] },
       { id: "split", label: "m_video_split", title: "title_video_split", desc: "desc_video_split", heading: "oh_segments", field: "segment_minutes", defaultValue: 1,
         options: [{ value: 1, label: "instagramStory", detail: "instagramStoryDetail" }, { value: "custom", label: "customSegment", detail: "customSegmentDetail", input: { unitKey: "minuteUnit", min: .01, max: 1440, step: .01, initial: 5 } }] },
       { id: "extract_frames", label: "m_video_extract_frames", title: "title_video_extract_frames", desc: "desc_video_extract_frames", heading: "oh_frames", field: "frame_mode", defaultValue: "second",
@@ -236,6 +300,16 @@ const categoryConfig = {
   audio: {
     accept: ".mp3,.wav,.m4a,.aac,.ogg,.flac,.opus", extensions: ["mp3", "wav", "m4a", "aac", "ogg", "flac", "opus"],
     modes: [
+      { id: "convert_format", label: "convertFormat", title: "convertFormat", desc: "desc_audio_convert_format", heading: "oh_audio_format", field: "format", defaultValue: "mp3",
+        options: [
+          { value: "mp3", label: "MP3", detail: "formatMp3Detail" },
+          { value: "wav", label: "WAV", detail: "formatWavDetail" },
+          { value: "m4a", label: "M4A", detail: "formatM4aDetail" },
+          { value: "aac", label: "AAC", detail: "formatAacDetail" },
+          { value: "ogg", label: "OGG", detail: "formatOggDetail" },
+          { value: "flac", label: "FLAC", detail: "formatFlacDetail" },
+          { value: "opus", label: "OPUS", detail: "formatOpusDetail" }
+        ] },
       { id: "volume", label: "m_audio_volume", title: "title_audio_volume", desc: "desc_audio_volume", heading: "oh_volume", field: "db", defaultValue: "custom",
         options: [{ value: "custom", label: "volumeChange", detail: "positiveHint", input: { unit: "dB", min: -30, max: 30, step: .5, initial: 3 } }] }
     ]
@@ -409,13 +483,22 @@ function resetModeSelection() {
 
 function extensionOf(name) { return name.includes(".") ? name.split(".").pop().toLowerCase() : ""; }
 
-function blockedImageFormats() {
-  if (state.category !== "image" || state.mode !== "convert_format") return new Set();
+function isFormatConversion() {
+  return ["image", "audio", "video"].includes(state.category) && state.mode === "convert_format";
+}
+
+function formatMessage(key) {
+  const category = state.category[0].toUpperCase() + state.category.slice(1);
+  return t(`${key}${category}Format`);
+}
+
+function blockedOutputFormats() {
+  if (!isFormatConversion()) return new Set();
   const blocked = new Set(state.uploadedFiles.map((file) => {
     const format = (file.format || extensionOf(file.name)).toLowerCase();
-    return { jpg: "jpeg", heif: "heic", hif: "heic", tif: "tiff" }[format] || format;
+    return { jpg: "jpeg", heif: "heic", hif: "heic", tif: "tiff", m4v: "mp4", mpg: "mpeg" }[format] || format;
   }));
-  if (state.uploadedFiles.length > 1) blocked.delete("gif");
+  if (state.category === "image" && state.uploadedFiles.length > 1) blocked.delete("gif");
   return blocked;
 }
 
@@ -760,8 +843,8 @@ function renderMarkdownOptions() {
 
 function renderOptions() {
   const mode = currentMode();
-  const formatConversion = state.category === "image" && mode.id === "convert_format";
-  const blockedFormats = blockedImageFormats();
+  const formatConversion = isFormatConversion();
+  const blockedFormats = blockedOutputFormats();
   if (formatConversion && (!mode.options.some((option) => option.value === state.selectedValue) || blockedFormats.has(state.selectedValue))) {
     state.selectedValue = mode.options.find((option) => !blockedFormats.has(option.value))?.value ?? null;
   }
@@ -800,7 +883,7 @@ function renderOptions() {
     if (formatConversion && option.value === "gif") {
       input = `<label class="gif-fps-field"><span>FPS</span><input id="gifFps" type="number" min="1" max="60" step="1" value="${state.gifFps}" aria-label="${t("gifFpsLabel")}" title="${t("gifFpsHint")}"${disabled ? " disabled" : ""}></label>`;
     }
-    row.innerHTML = `<span class="radio-dot"></span><span class="option-copy"><strong>${t(option.label)}</strong><small>${t(disabled ? "sameImageFormat" : option.detail)}</small></span>${input}`;
+    row.innerHTML = `<span class="radio-dot"></span><span class="option-copy"><strong>${t(option.label)}</strong><small>${disabled ? formatMessage("same") : t(option.detail)}</small></span>${input}`;
     const select = () => { if (disabled) return; state.selectedValue = option.value; renderOptions(); };
     row.addEventListener("click", (event) => { if (!event.target.matches("input")) select(); });
     row.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); select(); } });
@@ -845,8 +928,8 @@ function updateSelectionSummary() {
   const mode = currentMode();
   const option = mode.options?.find((item) => String(item.value) === String(state.selectedValue));
   if (!option) {
-    if (state.category === "image" && state.mode === "convert_format") {
-      elements.selectionSummary.textContent = t("noAvailableImageFormat");
+    if (isFormatConversion()) {
+      elements.selectionSummary.textContent = formatMessage("noAvailable");
     }
     return;
   }
@@ -881,8 +964,8 @@ function conversionOptions() {
   }
   if (!mode.field) return {};
   const option = mode.options.find((item) => String(item.value) === String(state.selectedValue));
-  if (state.category === "image" && state.mode === "convert_format" && (!option || blockedImageFormats().has(option.value))) {
-    throw new Error(t("chooseDifferentImageFormat"));
+  if (isFormatConversion() && (!option || blockedOutputFormats().has(option.value))) {
+    throw new Error(formatMessage("chooseDifferent"));
   }
   let value = state.selectedValue;
   if (option?.input) {
